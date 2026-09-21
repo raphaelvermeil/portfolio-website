@@ -1,0 +1,12 @@
+# Per-repo overrides, keyed by repository name.
+# Fields: title, blurb, hidden, featured, image (path under public/), homepage.
+
+ECSEGAMES:
+  title: ECSE Games
+  featured: true
+
+github-slideshow:
+  hidden: true
+
+neetcode-submissions:
+  hidden: true
