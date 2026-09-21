@@ -1,0 +1,378 @@
+[
+  {
+    "id": "ECSEGAMES",
+    "title": "ECSE Games",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/ECSEGAMES",
+    "homepage": null,
+    "language": "TypeScript",
+    "languages": {
+      "TypeScript": 378569,
+      "Go": 207515,
+      "HTML": 71032,
+      "CSS": 8473,
+      "JavaScript": 1937,
+      "Dockerfile": 1786
+    },
+    "stars": 1,
+    "sizeKb": 3740,
+    "pushedAt": "2026-09-20T18:40:55Z",
+    "topics": [],
+    "readmeExcerpt": "# ECSESS Games\n\nThe website that runs the **ECSESS Games** — a competition where students register with a\nMcGill email, join one of three program teams (Electrical, Computer, or Software), and earn\npoints in timed competitions, puzzles, and an in-house HTML/CSS challenge. Execs create\ncompetitions and enter scores; leaderboards track standings.\n\nThis document assumes **no prior knowledge** of the tools involved. Every technology is\nexplained from scratch. If you've never touched Go, React, or a database before, start here\nand read top to bottom.\n\n---\n\n## 1. The big picture\n\nThe project is split into two programs that run side by side and talk to each other over the\nnetwork:\n\n```\n                    ┌──────────────────────────────────────────────┐\n   Your browser ──▶ │  FRONTEND (Next.js)   http://localhost:3000   │\n                    │  The pages, buttons, and layouts you see.     │\n                    └───────────────────┬──────────────────────────┘\n                                        │  HTTP requests (via axios)\n                                        ▼\n                    ┌──────────────────────────────────────────────┐\n                    │  BACKEND (Go + chi)   http://localhost:8082   │\n                    │  The \"brain\": rules, scoring, who-can-do-what.│\n                    └───────────┬───────────────────┬──────────────┘\n                                │                   │\n              reads/writes data │                   │ verifies logins\n                                ▼                   ▼\n                    ┌────────────────────┐  ┌────────────────────┐\n                    │  DATABASE          │  │  AUTH (Clerk)      │\n                    │  MongoDB (Atlas)   │  │  logins & accounts │\n                    └────────────────────┘  └────────────────────┘\n```\n\n- **Frontend** = everything that runs *in the user's web browser*. It draws the screens and\n  sends requests when the user clicks things. It cannot be trusted with secrets or rules,",
+    "featured": true,
+    "image": null,
+    "activity": 0.7528632362946135
+  },
+  {
+    "id": "BridgeOrBust",
+    "title": "BridgeOrBust",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/BridgeOrBust",
+    "homepage": null,
+    "language": "Java",
+    "languages": {
+      "Java": 106244,
+      "CSS": 2943
+    },
+    "stars": 0,
+    "sizeKb": 34195,
+    "pushedAt": "2026-07-24T09:53:37Z",
+    "topics": [],
+    "readmeExcerpt": "<p align=\"center\">\n  <img src=\"logo.png\" width=\"180\" alt=\"Bridge or Bust logo\">\n</p>\n\n<h1 align=\"center\">Bridge or Bust</h1>\n\n<p align=\"center\">\n  A bridge-building puzzle game in JavaFX, powered by a physics engine written from scratch.\n</p>\n\n---\n\nDraw a bridge out of road and truss beams, hit play, and watch a car try to cross\nit. The beams sag, stretch, glow red under tension and blue under compression —\nand if you put a load where it doesn't belong, they snap and the whole thing goes\ninto the water.\n\nThere is no physics library here. Every force, every break, every sag comes from\na point-mass and spring solver written for this project.\n\n<p align=\"center\">\n  <img src=\"GBOB1.gif\" width=\"49%\">\n  <img src=\"GBOB2.gif\" width=\"49%\">\n</p>\n<p align=\"center\">\n  <img src=\"GBOB3.gif\" width=\"49%\">\n  <img src=\"GBOB4.gif\" width=\"49%\">\n</p>\n\n---\n\n## Features\n\n- **Two beam types.** *Truss* beams are structural only and take more load before\n  breaking (limit 4100 vs 2700). *Road* beams are physical — the car actually\n  drives on them, and it tilts to match whichever beam it's currently on.\n- **Live stress visualisation.** Each beam is tinted continuously in proportion to\n  `force / breakLimit`, so you can see a structure approaching failure before it\n  fails.\n- **Three levels plus a tutorial**, each defined by its own set of fixed anchor",
+    "featured": false,
+    "image": null,
+    "activity": 0.6592370148877473
+  },
+  {
+    "id": "quicklink",
+    "title": "quicklink",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/quicklink",
+    "homepage": null,
+    "language": "Java",
+    "languages": {
+      "Java": 36670
+    },
+    "stars": 0,
+    "sizeKb": 51,
+    "pushedAt": "2026-09-08T13:46:40Z",
+    "topics": [],
+    "readmeExcerpt": null,
+    "featured": false,
+    "image": null,
+    "activity": 0.576654880889883
+  },
+  {
+    "id": "enggames-partners",
+    "title": "enggames-partners",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/enggames-partners",
+    "homepage": "https://enggames-partners.vercel.app",
+    "language": "TypeScript",
+    "languages": {
+      "TypeScript": 108145,
+      "CSS": 4304,
+      "JavaScript": 559
+    },
+    "stars": 0,
+    "sizeKb": 183,
+    "pushedAt": "2026-07-22T14:01:22Z",
+    "topics": [],
+    "readmeExcerpt": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).\n\n## Getting Started\n\nFirst, run the development server haha:\n\n```bash\nnpm run dev\n# or\nyarn dev\n# or\npnpm dev\n# or\nbun dev\n```\n\nOpen [http://localhost:3000](http://localhost:3000) with your browser to see the result.\n\nYou can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.\n\nThis project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.\n\n## Learn More\n\nTo learn more about Next.js, take a look at the following resources:\n\n- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.\n- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.\n\nYou can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!\n\n## Deploy on Vercel\n\nThe easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.\n\nCheck out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.\n",
+    "featured": false,
+    "image": null,
+    "activity": 0.5712258845389853
+  },
+  {
+    "id": "pandas-marketingdata-prep",
+    "title": "pandas-marketingdata-prep",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/pandas-marketingdata-prep",
+    "homepage": null,
+    "language": "Jupyter Notebook",
+    "languages": {
+      "Jupyter Notebook": 1450843
+    },
+    "stars": 0,
+    "sizeKb": 1041,
+    "pushedAt": "2026-05-17T21:43:25Z",
+    "topics": [],
+    "readmeExcerpt": null,
+    "featured": false,
+    "image": null,
+    "activity": 0.5638926725254203
+  },
+  {
+    "id": "mern-chat-app",
+    "title": "mern-chat-app",
+    "blurb": "Learning MERN + Socket.io by making a MERN realtime application.",
+    "url": "https://github.com/raphaelvermeil/mern-chat-app",
+    "homepage": null,
+    "language": "JavaScript",
+    "languages": {
+      "JavaScript": 58716,
+      "HTML": 360,
+      "CSS": 58
+    },
+    "stars": 0,
+    "sizeKb": 120,
+    "pushedAt": "2026-07-24T09:00:01Z",
+    "topics": [],
+    "readmeExcerpt": "# Chat App\n\nA full-stack real-time chat application. Users can sign up, log in, update their\nprofile (with image upload), see who's online, and exchange text and image\nmessages in real time.\n\n## Tech Stack\n\n**Backend**\n- Node.js + [Express 5](https://expressjs.com/)\n- [MongoDB](https://www.mongodb.com/) via [Mongoose](https://mongoosejs.com/)\n- [Socket.IO](https://socket.io/) for real-time messaging & online presence\n- [JWT](https://github.com/auth0/node-jsonwebtoken) auth stored in an httpOnly cookie\n- [bcryptjs](https://github.com/dcodeIO/bcrypt.js) for password hashing\n- [Cloudinary](https://cloudinary.com/) for image uploads\n\n**Frontend**\n- [React 19](https://react.dev/) + [Vite](https://vitejs.dev/)\n- [Zustand](https://github.com/pmndrs/zustand) for state management\n- [React Router](https://reactrouter.com/)\n- [Tailwind CSS](https://tailwindcss.com/) + [daisyUI](https://daisyui.com/)\n- [Axios](https://axios-http.com/), [socket.io-client](https://socket.io/), [react-hot-toast](https://react-hot-toast.com/)\n\n## Project Structure\n\n```\nchat-app/\n├── backend/          # Express API + Socket.IO server\n│   └── src/\n│       ├── controllers/   # auth & message logic\n│       ├── middleware/     # protectRoute (JWT auth)\n│       ├── models/         # Mongoose schemas\n│       ├── routes/         # /api/auth, /api/messages\n│       ├── seeds/          # demo user seeder\n│       ├── lib/            # db, socket, cloudinary, utils\n│       └── index.js        # server entry point\n└── frontend/         # React + Vite client\n    └── src/\n        ├── components/\n        ├── pages/          # Home, Login, SignUp, Profile, Settings",
+    "featured": false,
+    "image": null,
+    "activity": 0.5633507887308149
+  },
+  {
+    "id": "neural-critters",
+    "title": "neural-critters",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/neural-critters",
+    "homepage": null,
+    "language": "Python",
+    "languages": {
+      "Python": 91674
+    },
+    "stars": 0,
+    "sizeKb": 48,
+    "pushedAt": "2026-07-12T11:54:52Z",
+    "topics": [],
+    "readmeExcerpt": "# Neural Critters — Evolved Swimmers\n\nDraw a creature, then watch it **evolve to swim**. Neural Critters is a 2D\nartificial-life sandbox: you sketch a body out of segments and joints, pick a\nbrain, and an evolutionary algorithm discovers how to make it undulate through\nopen water. Two very different brains can drive the same body, and you can watch\neither one think in real time.\n\nThe swimming physics is a small, dependency-free **spring-mass engine** (point\nmasses, distance-spring links, variable-rest-length muscles, perpendicular water\ndrag) inspired by the classic evolved-virtual-creature videos — no game engine\ndoing the physics for you.\n\n---\n\n## The two brains\n\n- **CPG** (Central Pattern Generator) — an internal **clock** cycles through a\n  ring of **keyframe poses** (a target contraction for every muscle), tweening\n  between them. It's open-loop: it plays a timed rhythm and ignores feedback.\n  Evolved by a plain mutate-and-select GA. Fast and sample-efficient.\n- **NEAT** — an evolved **neural network** reads sensors each tick (per-muscle\n  contraction + rate, centre-of-mass velocity, a clock) and drives the muscles.\n  Closed-loop: it reacts. Topology *and* weights evolve\n  ([neat-python](https://neat-python.readthedocs.io/)).\n\nEach brain has a **live visualizer** shown beside the swimmer:\n- CPG → a **clock dial** whose hand sweeps through the keyframes, each drawn as a\n  little stick figure of the body settled into that pose, above live per-muscle\n  bars.\n- NEAT → a **network panel** whose nodes and connections light up as signal flows\n  (\"neurons firing\").\n\n---\n\n## Quick start\n\nRequires **Python 3.11+** (developed on 3.14).\n\n```bash",
+    "featured": false,
+    "image": null,
+    "activity": 0.5355853129911518
+  },
+  {
+    "id": "caterpiller",
+    "title": "caterpiller",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/caterpiller",
+    "homepage": null,
+    "language": "Java",
+    "languages": {
+      "Java": 42099
+    },
+    "stars": 0,
+    "sizeKb": 4130,
+    "pushedAt": "2025-11-14T18:46:48Z",
+    "topics": [],
+    "readmeExcerpt": null,
+    "featured": false,
+    "image": null,
+    "activity": 0.4676906418993874
+  },
+  {
+    "id": "NeuralNetwork",
+    "title": "NeuralNetwork",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/NeuralNetwork",
+    "homepage": null,
+    "language": "Python",
+    "languages": {
+      "Python": 7223
+    },
+    "stars": 0,
+    "sizeKb": 6,
+    "pushedAt": "2026-06-03T09:35:02Z",
+    "topics": [],
+    "readmeExcerpt": "# NeuralNetwork\n\nA general-purpose feed-forward neural network implemented from scratch in\n[main.py](main.py) using only NumPy. No deep-learning frameworks — forward\npropagation, back propagation, and gradient descent are all written out by hand.\n\nThe network is **fully generalised**: the input size, number of hidden layers,\nsize of each hidden layer, and output size are all driven by a handful of\nconstants. Change them to fit any classification problem — the rest of the code\n(initialisation, forward prop, back prop, parameter updates) adapts\nautomatically. Handwritten-digit recognition (MNIST) is used below only as a\nworked example.\n\n## Configuring the network\n\nThe architecture is defined by these constants near the top of [main.py](main.py):\n\n```python\ninput_layer_size        = 784        # number of input features\nnumber_of_hidden_layers = 2          # how many hidden layers\nsize_of_hidden_layers   = [100, 10]  # one entry per hidden layer\noutput_layer_size       = 10         # number of output classes\n```\n\nTune these to your problem:\n\n- **`input_layer_size`** — number of features per example.\n- **`number_of_hidden_layers`** — network depth.\n- **`size_of_hidden_layers`** — a list with one neuron count per hidden layer\n  (its length must equal `number_of_hidden_layers`).\n- **`output_layer_size`** — number of classes to predict.\n\nFor example, a problem with 64 features, three hidden layers, and 5 classes:\n\n```python\ninput_layer_size        = 64\nnumber_of_hidden_layers = 3\nsize_of_hidden_layers   = [128, 64, 32]\noutput_layer_size       = 5\n```",
+    "featured": false,
+    "image": null,
+    "activity": 0.4665515709346297
+  },
+  {
+    "id": "McWicsHackathon",
+    "title": "McWicsHackathon",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/McWicsHackathon",
+    "homepage": null,
+    "language": "Python",
+    "languages": {
+      "Python": 5401
+    },
+    "stars": 0,
+    "sizeKb": 234,
+    "pushedAt": "2026-02-08T19:15:08Z",
+    "topics": [],
+    "readmeExcerpt": null,
+    "featured": false,
+    "image": null,
+    "activity": 0.4643588615147791
+  },
+  {
+    "id": "ecse-211-robot",
+    "title": "ecse-211-robot",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/ecse-211-robot",
+    "homepage": null,
+    "language": "Python",
+    "languages": {
+      "Python": 42264
+    },
+    "stars": 0,
+    "sizeKb": 15,
+    "pushedAt": "2026-04-10T15:18:04Z",
+    "topics": [],
+    "readmeExcerpt": null,
+    "featured": false,
+    "image": null,
+    "activity": 0.44767952943150247
+  },
+  {
+    "id": "learn-shaders",
+    "title": "learn-shaders",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/learn-shaders",
+    "homepage": null,
+    "language": "HTML",
+    "languages": {
+      "HTML": 55087
+    },
+    "stars": 0,
+    "sizeKb": 17,
+    "pushedAt": "2026-03-06T22:01:21Z",
+    "topics": [],
+    "readmeExcerpt": null,
+    "featured": false,
+    "image": null,
+    "activity": 0.4264563732733033
+  },
+  {
+    "id": "fakeCodePolisher",
+    "title": "fakeCodePolisher",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/fakeCodePolisher",
+    "homepage": null,
+    "language": "TypeScript",
+    "languages": {
+      "TypeScript": 8955,
+      "JavaScript": 1878
+    },
+    "stars": 0,
+    "sizeKb": 54,
+    "pushedAt": "2026-01-18T16:15:33Z",
+    "topics": [],
+    "readmeExcerpt": "# raphael README\n\nThis is the README for your extension \"raphael\". After writing up a brief description, we recommend including the following sections.\n\n## Features\n\nDescribe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.\n\nFor example if there is an image subfolder under your extension project workspace:\n\n\\!\\[feature X\\]\\(images/feature-x.png\\)\n\n> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.\n\n## Requirements\n\nIf you have any requirements or dependencies, add a section describing those and how to install and configure them.\n\n## Extension Settings\n\nInclude if your extension adds any VS Code settings through the `contributes.configuration` extension point.\n\nFor example:\n\nThis extension contributes the following settings:\n\n* `myExtension.enable`: Enable/disable this extension.\n* `myExtension.thing`: Set to `blah` to do something.\n\n## Known Issues\n\nCalling out known issues can help limit users opening duplicate issues against your extension.\n\n## Release Notes\n\nUsers appreciate release notes as you update your extension.\n\n### 1.0.0\n\nInitial release of ...",
+    "featured": false,
+    "image": null,
+    "activity": 0.4183546229799126
+  },
+  {
+    "id": "gen-z-translator",
+    "title": "gen-z-translator",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/gen-z-translator",
+    "homepage": null,
+    "language": "TypeScript",
+    "languages": {
+      "TypeScript": 30238,
+      "JavaScript": 18560,
+      "CSS": 1825
+    },
+    "stars": 0,
+    "sizeKb": 219,
+    "pushedAt": "2025-11-16T16:48:30Z",
+    "topics": [],
+    "readmeExcerpt": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).\n\n## Gen Z Translator\n\nA real-time messaging app that automatically translates messages between Gen Z and Boomer communication styles using OpenAI's ChatGPT.\n\n## Environment Setup\n\n### Required Environment Variables\n\nCreate a `.env.local` file in the root directory with the following variables:\n\n```env\n# Supabase Configuration\nNEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here\nNEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here\n\n# Supabase Service Role Key (for server-side operations)\n# IMPORTANT: Keep this secret! Never expose in client-side code\n# Find this in: Supabase Dashboard > Project Settings > API > service_role key\nSUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here\n\n# OpenAI (ChatGPT) API Configuration\n# Get your API key from: https://platform.openai.com/api-keys\nOPENAI_API_KEY=your_openai_api_key_here\n\n# Vercel KV (for rate limiting)\n# These are automatically set when you add KV storage in Vercel Dashboard\n# For local development, get these from: Vercel Dashboard > Storage > KV > .env.local tab\nKV_URL=your_kv_url\nKV_REST_API_URL=your_kv_rest_api_url\nKV_REST_API_TOKEN=your_kv_rest_api_token\nKV_REST_API_READ_ONLY_TOKEN=your_kv_rest_api_read_only_token\n```\n\n### Vercel KV Setup (Required for Rate Limiting)\n\n1. Go to your [Vercel Dashboard](https://vercel.com/dashboard)\n2. Click on your project\n3. Go to \"Storage\" tab",
+    "featured": false,
+    "image": null,
+    "activity": 0.40532261017949184
+  },
+  {
+    "id": "pathfinding2",
+    "title": "pathfinding2",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/pathfinding2",
+    "homepage": null,
+    "language": "Java",
+    "languages": {
+      "Java": 24116
+    },
+    "stars": 0,
+    "sizeKb": 38,
+    "pushedAt": "2025-11-28T19:31:40Z",
+    "topics": [],
+    "readmeExcerpt": null,
+    "featured": false,
+    "image": null,
+    "activity": 0.37605149428777856
+  },
+  {
+    "id": "pathfinding",
+    "title": "pathfinding",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/pathfinding",
+    "homepage": null,
+    "language": "Java",
+    "languages": {
+      "Java": 27751
+    },
+    "stars": 0,
+    "sizeKb": 38,
+    "pushedAt": "2025-11-21T20:01:35Z",
+    "topics": [],
+    "readmeExcerpt": null,
+    "featured": false,
+    "image": null,
+    "activity": 0.37127120350898607
+  },
+  {
+    "id": "GearMeUp",
+    "title": "GearMeUp",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/GearMeUp",
+    "homepage": null,
+    "language": "TypeScript",
+    "languages": {
+      "TypeScript": 195357,
+      "JavaScript": 4488,
+      "CSS": 658
+    },
+    "stars": 0,
+    "sizeKb": 13397,
+    "pushedAt": "2025-04-25T17:00:46Z",
+    "topics": [],
+    "readmeExcerpt": "# GearShare - Outdoor Gear Rental Marketplace\n\nGearShare is a sharing economy platform that allows people to rent their outdoor gear to others in their community. It's similar to Facebook Marketplace but specifically focused on outdoor equipment rental.\n\n## Features\n\n- User registration and authentication\n- Create and manage gear listings\n- Browse and search for gear by category, condition, and price\n- Request to rent gear with specific dates\n- Manage rental requests (both as owner and renter)\n- Review system for both renters and owners\n- Responsive design for mobile and desktop\n\n## Tech Stack\n\n- Frontend: Next.js 14 with TypeScript\n- Styling: Tailwind CSS\n- Backend: Directus (Headless CMS)\n- Authentication: NextAuth.js\n- Deployment: Netlify\n\n## Getting Started\n\n### Prerequisites\n\n- Node.js 18+ and npm\n- Directus instance (local or hosted)\n- Netlify account (for deployment)\n\n### Environment Variables\n\n1. Copy the example environment file:\n\n   ```bash\n   cp .env.example .env.local\n   ```\n\n2. Update the environment variables in `.env.local`:\n",
+    "featured": false,
+    "image": null,
+    "activity": 0.347796351835997
+  },
+  {
+    "id": "treasurehunt",
+    "title": "treasurehunt",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/treasurehunt",
+    "homepage": null,
+    "language": "JavaScript",
+    "languages": {
+      "JavaScript": 12032,
+      "CSS": 8675,
+      "HTML": 3823
+    },
+    "stars": 0,
+    "sizeKb": 12,
+    "pushedAt": "2025-10-25T23:48:02Z",
+    "topics": [],
+    "readmeExcerpt": "# Treasure Hunt Website\n\nA simple, interactive treasure hunt game where groups solve riddles and find locations on a map. **Optimized for mobile devices!** 📱\n\n## 🚀 Quick Start\n\n### Deploy to Netlify\n\n1. Drag and drop the entire folder to [Netlify Drop](https://app.netlify.com/drop)\n2. Your site will be live instantly!\n\n### Test Locally\n\nSimply open `index.html` in your web browser.\n\n## 📝 Customization\n\n### Change Riddles\n\nEdit `riddles.js` to customize your treasure hunt:\n\n```javascript\nconst riddles = [\n    {\n        text: \"Your riddle here\",\n        answer: \"Description of the location\",\n        lat: 48.8566,  // Latitude of correct location\n        lng: 2.3522,   // Longitude of correct location\n        funnyText: \"Your inside joke here! 😂\",  // Optional\n        imageUrl: \"https://i.imgur.com/yourimage.jpg\"  // Optional\n    },\n    // Add more riddles...\n];\n```\n\n**How to get coordinates:**\n1. Go to [Google Maps](https://maps.google.com)\n2. Right-click on a location\n3. Click the coordinates to copy them\n4. Paste into `lat` and `lng`",
+    "featured": false,
+    "image": null,
+    "activity": 0.32902970032399226
+  },
+  {
+    "id": "gearmeup-native",
+    "title": "gearmeup-native",
+    "blurb": null,
+    "url": "https://github.com/raphaelvermeil/gearmeup-native",
+    "homepage": null,
+    "language": null,
+    "languages": {},
+    "stars": 0,
+    "sizeKb": 0,
+    "pushedAt": "2025-04-28T16:03:55Z",
+    "topics": [],
+    "readmeExcerpt": null,
+    "featured": false,
+    "image": null,
+    "activity": 0.14982410583143074
+  }
+]
