@@ -139,7 +139,7 @@ Generated JSON is **committed** so `pnpm dev` and CI builds work without network
 
 ```
 recency  = clamp(1 - daysSincePush / 730, 0, 1)        // 0..1, two-year window
-stars    = log2(stargazers + 1) / 4                     // 0..~1 for ≤15 stars
+stars    = clamp(log2(stargazers + 1) / 4, 0, 1)        // saturates at 15 stars
 size     = clamp(log10(sizeKb + 1) / 4, 0, 1)           // 0..1
 activity = 0.5*recency + 0.3*stars + 0.2*size          // 0..1
 radius   = 0.6 + activity * 1.0                          // 0.6..1.6
