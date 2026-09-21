@@ -1,4 +1,4 @@
-import { load } from 'js-yaml';
+import { loadYaml } from './yaml';
 import type { Project } from './types';
 
 export interface ProjectOverride {
@@ -15,13 +15,7 @@ export type OverrideMap = Record<string, ProjectOverride>;
 const ALLOWED = new Set(['title', 'blurb', 'hidden', 'featured', 'image', 'homepage']);
 
 export function parseOverrides(yamlText: string): OverrideMap {
-  let doc;
-  try {
-    doc = load(yamlText);
-  } catch (e) {
-    // Empty input or comment-only input
-    return {};
-  }
+  const doc = loadYaml(yamlText);
   if (doc === null || doc === undefined) return {};
   if (typeof doc !== 'object' || Array.isArray(doc)) throw new Error('projects.yml must be a map of repo name → overrides');
   const out: OverrideMap = {};

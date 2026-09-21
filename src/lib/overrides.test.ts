@@ -35,6 +35,10 @@ describe('parseOverrides', () => {
   it('rejects unknown fields', () => {
     expect(() => parseOverrides('x:\n  colour: red\n')).toThrow(/unknown field "colour"/);
   });
+
+  it('propagates YAML syntax errors instead of hiding them', () => {
+    expect(() => parseOverrides('x:\n  title: [\n')).toThrow();
+  });
 });
 
 describe('isHidden', () => {
