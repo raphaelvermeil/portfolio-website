@@ -1,0 +1,12 @@
+:root {
+  --bg: #0b0f17;
+  --ink: #dbe4f0;
+  --muted: #7d8ba1;
+  --grid: rgba(120, 160, 255, 0.06);
+  --accent: #5ee1ff;
+  --line: rgba(219, 228, 240, 0.25);
+  --panel: rgba(11, 15, 23, 0.85);
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --gutter: clamp(16px, 4vw, 48px);
+}
