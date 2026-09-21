@@ -21,8 +21,8 @@ Repository data is fetched from the GitHub API **at build time**, so the live si
 
 | Concern | Choice |
 |---|---|
-| Build | Vite, TypeScript, pnpm, Node 20 |
-| UI | React 18 |
+| Build | Vite 8, TypeScript 5.9, pnpm, Node 20 |
+| UI | React 19.2 (required by @react-three/fiber 9) |
 | 3D | `three`, `@react-three/fiber`, `@react-three/drei`, `@react-three/postprocessing` (bloom only) |
 | State | `zustand` (hovered / selected / language filter) |
 | Content | YAML + Markdown in `content/`, parsed with `js-yaml` and `marked` |
@@ -118,7 +118,7 @@ All HTML, positioned over the canvas, `pointer-events: none` on the wrapper and 
 
 ### 7.1 Fetch script — `scripts/fetch-github.ts`
 
-Run with `pnpm fetch`; `pnpm build` runs it first via a `prebuild` script.
+Run with `pnpm sync`; `pnpm build` runs it first via a `prebuild` script.
 
 1. `GET https://api.github.com/users/<site.github>/repos?per_page=100&type=owner`
 2. Filter out: `fork: true`, `archived: true`, and any name listed with `hidden: true` in `content/projects.yml`.
@@ -251,4 +251,4 @@ Rendering, interaction, and performance are verified manually in the browser (`p
 
 ## 13. Deployment
 
-`.github/workflows/deploy.yml`: on push to `main` and nightly at 03:00 UTC — checkout, pnpm install, `pnpm fetch` with `GITHUB_TOKEN`, `pnpm build`, upload `dist/` to GitHub Pages. `vite.config.ts` sets `base` from `VITE_BASE` env (default `/`), so the same build works at a subpath on Pages or at root on Vercel/Netlify.
+`.github/workflows/deploy.yml`: on push to `main` and nightly at 03:00 UTC — checkout, pnpm install, `pnpm sync` with `GITHUB_TOKEN`, `pnpm build`, upload `dist/` to GitHub Pages. `vite.config.ts` sets `base` from `VITE_BASE` env (default `/`), so the same build works at a subpath on Pages or at root on Vercel/Netlify.
