@@ -1,7 +1,11 @@
+import { Machine } from './scene/MachineScene';
+
 export default function App() {
   return (
     <main>
-      <h1 className="placeholder">PORTFOLIO — SCAFFOLD</h1>
+      <section className="machine" aria-label="Projects">
+        <Machine />
+      </section>
     </main>
   );
 }
