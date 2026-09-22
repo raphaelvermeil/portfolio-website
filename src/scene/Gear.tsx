@@ -6,9 +6,15 @@ import { useReducedMotion } from '../lib/hooks';
 import { languageColor } from '../lib/palette';
 import { useStore } from '../lib/store';
 import type { Project } from '../lib/types';
-import { createGearGeometry } from './gearGeometry';
 import type { GearPlacement } from './layout';
+import { createPart } from './parts';
 
+/**
+ * Edges are only drawn where faces meet at more than this angle. It sits above the
+ * 10° facets of a revolved surface (so seams stay hidden) and below the profile
+ * steps, tooth flanks and box corners that define a part's silhouette.
+ */
+const EDGE_THRESHOLD_DEG = 24;
 const BASE_SPEED = 0.15;
 const HOVER_MULT = 4;
 const SELECT_MULT = 2;
@@ -20,10 +26,13 @@ interface Props {
 }
 
 export function Gear({ placement, project, spinDir }: Props) {
-  const { id, radius, teeth, position, quaternion } = placement;
-  const geometry = useMemo(() => createGearGeometry(radius, teeth), [radius, teeth]);
-  const edges = useMemo(() => new EdgesGeometry(geometry, 15), [geometry]);
+  const { id, language, radius, position, quaternion } = placement;
+  const geometry = useMemo(() => createPart({ id, language, radius }), [id, language, radius]);
+  const edges = useMemo(() => new EdgesGeometry(geometry, EDGE_THRESHOLD_DEG), [geometry]);
   const baseColor = useMemo(() => new Color(languageColor(project.language)), [project.language]);
+  /** Revolved parts have no hard edges along their axis, so a solid body carries the
+   *  silhouette and occludes what is behind it; the bright edges draw the detail. */
+  const fillColor = useMemo(() => baseColor.clone().multiplyScalar(0.14), [baseColor]);
 
   const spinner = useRef<Group>(null);
   const ring = useRef<Mesh>(null);
@@ -77,7 +86,16 @@ export function Gear({ placement, project, spinDir }: Props) {
     <group position={position} quaternion={quaternion}>
       <group ref={spinner}>
         <mesh geometry={geometry} onPointerOver={onOver} onPointerOut={onOut} onClick={onClick}>
-          <meshBasicMaterial color={baseColor} transparent opacity={dimmed ? 0.02 : 0.08} depthWrite={false} side={DoubleSide} />
+          <meshBasicMaterial
+            color={fillColor}
+            transparent={dimmed}
+            opacity={dimmed ? 0.12 : 1}
+            depthWrite={!dimmed}
+            side={DoubleSide}
+            polygonOffset
+            polygonOffsetFactor={1}
+            polygonOffsetUnits={1}
+          />
         </mesh>
         <lineSegments geometry={edges}>
           <lineBasicMaterial ref={edgeMat} transparent opacity={dimmed ? 0.15 : 1} toneMapped={false} />
