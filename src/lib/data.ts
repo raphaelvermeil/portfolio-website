@@ -3,6 +3,7 @@ import languagesJson from '../data/languages.json';
 import metaJson from '../data/meta.json';
 import type { Meta, Project } from './types';
 
+// Double cast: the JSON's per-object literal types don't overlap Project (heterogeneous `languages` keys).
 export const projects = projectsJson as unknown as Project[];
 export const languageBytes = languagesJson as Record<string, number>;
 export const meta = metaJson as Meta;

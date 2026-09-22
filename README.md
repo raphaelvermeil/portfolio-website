@@ -23,4 +23,4 @@ pnpm build     # runs sync first, then type-checks and builds to dist/
 
 ## Deploy
 
-`.github/workflows/deploy.yml` builds nightly and on every push to `main`, then publishes `dist/` to GitHub Pages (enable Pages → Source: GitHub Actions in the repo settings). The `VITE_BASE` env sets the URL base; leave it unset for a root deploy on Vercel/Netlify.
+`.github/workflows/deploy.yml` builds nightly and on every push to `main`, then publishes `dist/` to GitHub Pages (enable Pages → Source: GitHub Actions in the repo settings). The `VITE_BASE` env sets the URL base; leave it unset for a root deploy on Vercel/Netlify. For a user site (`<user>.github.io` repo) set `VITE_BASE=/` instead.

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { projectById } from '../lib/data';
 import { renderMarkdown } from '../lib/markdown';
 import { languageLabel } from '../lib/palette';
+import { withBase } from '../lib/paths';
 import { useStore } from '../lib/store';
 
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -21,7 +22,8 @@ export function DetailPanel() {
     if (!project) return;
     const el = panel.current;
     const previous = document.activeElement as HTMLElement | null;
-    el?.querySelector<HTMLElement>('.panel__close')?.focus();
+    const openedFromStage = previous?.classList.contains('machine__stage') ?? false;
+    if (!openedFromStage) el?.querySelector<HTMLElement>('.panel__close')?.focus();
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -93,7 +95,7 @@ export function DetailPanel() {
               </a>
             )}
           </div>
-          {project.image && <img className="panel__image" src={project.image} alt="" />}
+          {project.image && <img className="panel__image" src={withBase(project.image)} alt="" />}
           {readme && (
             <section className="panel__readme">
               <p className="label">README</p>

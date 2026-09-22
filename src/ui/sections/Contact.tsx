@@ -1,4 +1,5 @@
 import { meta } from '../../lib/data';
+import { withBase } from '../../lib/paths';
 import { site } from '../../lib/siteContent';
 import { Sheet } from '../Sheet';
 
@@ -8,7 +9,7 @@ export function Contact() {
     { label: 'GitHub', href: meta.profileUrl, text: `github.com/${site.github}` },
   ];
   if (site.linkedin) rows.push({ label: 'LinkedIn', href: site.linkedin, text: site.linkedin.replace(/^https?:\/\//, '') });
-  if (site.resume) rows.push({ label: 'Resume', href: site.resume, text: 'Download PDF' });
+  if (site.resume) rows.push({ label: 'Resume', href: withBase(site.resume), text: 'Download PDF' });
   return (
     <Sheet id="contact" title="Contact" number={4}>
       <table className="panel__block contact">

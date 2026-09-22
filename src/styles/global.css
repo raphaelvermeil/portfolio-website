@@ -47,10 +47,6 @@ h3,
   color: var(--muted);
 }
 
-.placeholder {
-  padding: var(--gutter);
-}
-
 /* --- Machine section ---------------------------------------------------- */
 .machine {
   position: relative;
@@ -544,4 +540,16 @@ h3,
   padding: var(--gutter);
   padding-bottom: calc(var(--gutter) + env(safe-area-inset-bottom, 0px));
   text-align: center;
+}
+
+/* --- WebGL fallback ----------------------------------------------------- */
+.machine:has(.machine__fallback) {
+  height: auto;
+  min-height: 100svh;
+  overflow: visible;
+}
+
+.machine:has(.machine__fallback) .hero__hint,
+.machine:has(.machine__fallback) .hero__legend {
+  display: none;
 }

@@ -107,7 +107,7 @@ export async function fetchAll(user: string, overrides: OverrideMap, deps: Fetch
       readmeExcerpt,
       featured: false,
       image: null,
-      activity: activityScore({ stars: r.stargazers_count, sizeKb: r.size, pushedAt: r.pushed_at }, now),
+      activity: Math.round(activityScore({ stars: r.stargazers_count, sizeKb: r.size, pushedAt: r.pushed_at }, now) * 1000) / 1000,
     };
     return applyOverride(base, overrides[r.name]);
   });
@@ -175,5 +175,10 @@ const realDeps: FetchDeps = {
 };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  run(realDeps).then((code) => process.exit(code));
+  run(realDeps)
+    .then((code) => process.exit(code))
+    .catch((err) => {
+      console.error(`[sync] ERROR: ${err instanceof Error ? err.message : String(err)}`);
+      process.exit(1);
+    });
 }

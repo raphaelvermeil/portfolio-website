@@ -24,17 +24,26 @@ function StaticProjects() {
 
 const order = placements.map((p) => p.id);
 
-/** Tab cycles through gears while the stage itself is focused; leaves the section after the last one. */
+let lastIndex = -1;
+
+/** Tab cycles through gears while the stage itself is focused; leaves the section after the last one. Esc clears. */
 function cycle(e: KeyboardEvent<HTMLDivElement>) {
-  if (e.key !== 'Tab' || e.target !== e.currentTarget) return;
+  if (e.target !== e.currentTarget) return;
   const { selected, setSelected } = useStore.getState();
-  const i = selected ? order.indexOf(selected) : -1;
+  if (e.key === 'Escape') {
+    setSelected(null);
+    return;
+  }
+  if (e.key !== 'Tab') return;
+  const i = selected ? order.indexOf(selected) : lastIndex;
   const next = e.shiftKey ? i - 1 : i + 1;
   if (next < 0 || next >= order.length) {
+    lastIndex = -1;
     setSelected(null);
     return;
   }
   e.preventDefault();
+  lastIndex = next;
   setSelected(order[next]);
 }
 
@@ -43,7 +52,7 @@ export function MachineSection() {
   return (
     <section className="machine" id="projects" aria-label="Projects">
       {webgl ? (
-        <div className="machine__stage" tabIndex={0} onKeyDown={cycle} aria-label="Project constellation. Press Tab to step through projects.">
+        <div className="machine__stage" role="group" tabIndex={0} onKeyDown={cycle} aria-label="Project constellation. Press Tab to step through projects.">
           <Machine />
         </div>
       ) : (

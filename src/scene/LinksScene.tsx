@@ -18,7 +18,7 @@ function useLinkState(a: string, b: string) {
 function ShaftLine({ shaft }: { shaft: Shaft }) {
   const { highlighted, dimmed } = useLinkState(shaft.a, shaft.b);
   const points = useMemo(() => [placementById[shaft.a].position, placementById[shaft.b].position], [shaft]);
-  const color = languageColor(shaft.language === 'Other' ? null : shaft.language);
+  const color = languageColor(shaft.language);
   return <Line points={points} color={color} lineWidth={highlighted ? 1.5 : 1} transparent opacity={dimmed ? 0.05 : highlighted ? 0.8 : 0.35} toneMapped={false} />;
 }
 

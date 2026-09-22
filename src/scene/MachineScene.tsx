@@ -54,7 +54,7 @@ export function Machine() {
         enableDamping
         dampingFactor={0.08}
         rotateSpeed={0.6}
-        minDistance={8}
+        minDistance={6}
         maxDistance={24}
         autoRotate={!hasInteracted && !reduced && selected === null}
         autoRotateSpeed={0.4}

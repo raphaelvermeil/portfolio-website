@@ -9,7 +9,7 @@ interface ControlsLike {
 }
 
 const HOME_DISTANCE = 16;
-const FOCUS_OFFSET = 5;
+const FOCUS_OFFSET = 6;
 const SMOOTHING = 4;
 const SETTLE_EPSILON = 0.05;
 
