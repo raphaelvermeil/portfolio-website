@@ -2,6 +2,7 @@ import { meta } from '../lib/data';
 import { site } from '../lib/siteContent';
 import { useStore } from '../lib/store';
 import { Legend } from './Legend';
+import { Scrubber } from './Scrubber';
 
 export function HeroOverlay() {
   const hasInteracted = useStore((s) => s.hasInteracted);
@@ -27,6 +28,7 @@ export function HeroOverlay() {
         <p className={`hero__hint${hasInteracted ? ' is-hidden' : ''}`} aria-hidden={hasInteracted}>
           drag to orbit · click a gear
         </p>
+        <Scrubber />
         <p className="hero__stamp label">
           Sheet 1/4 · Rev {rev}
         </p>

@@ -1,40 +1,41 @@
 import { describe, expect, it } from 'vitest';
-import { PART_NAMES, createPart, partNameFor } from './index';
+import { ASSEMBLY } from '../assembly';
+import { PART_NAMES, buildPart } from './index';
 
-describe('partNameFor', () => {
-  it('maps known languages to their archetype', () => {
-    expect(partNameFor('TypeScript')).toBe('lensBarrel');
-    expect(partNameFor('Python')).toBe('bearing');
-    expect(partNameFor('Jupyter Notebook')).toBe('turbineHub');
+describe('buildPart', () => {
+  it('builds every archetype', () => {
+    for (const name of PART_NAMES) {
+      expect(buildPart(name, 1.2, 'seed').getAttribute('position').count).toBeGreaterThan(0);
+    }
   });
 
-  it('gives unknown languages a stable archetype from the set', () => {
-    const first = partNameFor('Brainfuck');
-    expect(PART_NAMES).toContain(first);
-    expect(partNameFor('Brainfuck')).toBe(first);
+  it('is deterministic for a given seed', () => {
+    const a = buildPart('spokedWheel', 1.1, 'alpha').getAttribute('position').array;
+    const b = buildPart('spokedWheel', 1.1, 'alpha').getAttribute('position').array;
+    expect(Array.from(a)).toEqual(Array.from(b));
   });
 
-  it('keeps "Other" stable too', () => {
-    expect(PART_NAMES).toContain(partNameFor('Other'));
+  it('varies between seeds', () => {
+    const a = buildPart('finnedCollar', 1.1, 'alpha').getAttribute('position').count;
+    const b = buildPart('finnedCollar', 1.1, 'omega').getAttribute('position').count;
+    expect(a).not.toBe(b);
   });
 });
 
-describe('createPart', () => {
-  const spec = { id: 'pathfinding', language: 'Java', radius: 1.1 };
-
-  it('builds geometry for a repo', () => {
-    expect(createPart(spec).getAttribute('position').count).toBeGreaterThan(0);
+describe('ASSEMBLY', () => {
+  it('names only real archetypes', () => {
+    for (const part of ASSEMBLY) expect(PART_NAMES).toContain(part.name);
   });
 
-  it('is deterministic per repo id', () => {
-    expect(Array.from(createPart(spec).getAttribute('position').array)).toEqual(
-      Array.from(createPart(spec).getAttribute('position').array),
-    );
+  it('gives every part a positive radius', () => {
+    for (const part of ASSEMBLY) expect(part.radius).toBeGreaterThan(0);
   });
 
-  it('gives two repos of one language different dimensions', () => {
-    const a = createPart({ id: 'alpha', language: 'JavaScript', radius: 1 });
-    const b = createPart({ id: 'omega', language: 'JavaScript', radius: 1 });
-    expect(a.getAttribute('position').count).not.toBe(b.getAttribute('position').count);
+  it('anchors the ends with the largest parts and varies the silhouette', () => {
+    const radii = ASSEMBLY.map((p) => p.radius);
+    const largest = Math.max(...radii);
+    expect(Math.max(radii[radii.length - 1], radii[radii.length - 2])).toBeCloseTo(largest, 1);
+    // Neighbouring parts always differ, so the profile never flattens into a tube.
+    for (let i = 1; i < radii.length; i++) expect(radii[i]).not.toBe(radii[i - 1]);
   });
 });

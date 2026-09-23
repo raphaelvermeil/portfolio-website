@@ -1,14 +1,15 @@
 import { Html, useCursor } from '@react-three/drei';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useMemo, useRef, useState } from 'react';
-import { Color, DoubleSide, EdgesGeometry, type Group, type LineBasicMaterial, type Mesh } from 'three';
+import { Color, DoubleSide, EdgesGeometry, type Group, type LineBasicMaterial } from 'three';
 import { useReducedMotion } from '../lib/hooks';
 import { languageColor } from '../lib/palette';
 import { useStore } from '../lib/store';
 import type { Project } from '../lib/types';
-import type { GearPlacement } from './axisLayout';
+import { partX, type GearPlacement } from './axisLayout';
+import { explode } from './explode';
 import { partById } from './machine';
-import { BACKGROUND, EDGE_THRESHOLD_DEG, INK, INK_DIM, ACCENT } from './theme';
+import { BACKGROUND, EDGE_THRESHOLD_DEG, INK, INK_DIM } from './theme';
 
 const BASE_SPEED = 0.15;
 const HOVER_MULT = 4;
@@ -21,7 +22,7 @@ interface Props {
 }
 
 export function Gear({ placement, project, spinDir }: Props) {
-  const { id, language, radius, position, quaternion } = placement;
+  const { id, language, radius, quaternion } = placement;
   const geometry = partById[id];
   const edges = useMemo(() => new EdgesGeometry(geometry, EDGE_THRESHOLD_DEG), [geometry]);
 
@@ -30,8 +31,8 @@ export function Gear({ placement, project, spinDir }: Props) {
   const activeColor = useMemo(() => new Color(languageColor(project.language)), [project.language]);
   const dimColor = useMemo(() => new Color(INK_DIM), []);
 
+  const slider = useRef<Group>(null);
   const spinner = useRef<Group>(null);
-  const ring = useRef<Mesh>(null);
   const edgeMat = useRef<LineBasicMaterial>(null);
   const angle = useRef(0);
   const [localHover, setLocalHover] = useState(false);
@@ -46,18 +47,15 @@ export function Gear({ placement, project, spinDir }: Props) {
   const dimmed = filter !== null && filter !== language;
   useCursor(localHover && !dimmed);
 
-  useFrame((state, dt) => {
+  useFrame((_state, dt) => {
     const base = reduced ? BASE_SPEED * 0.25 : BASE_SPEED;
     const mult = hovered ? HOVER_MULT : selected ? SELECT_MULT : 1;
     const speed = dimmed ? 0 : base * mult;
     angle.current += dt * speed * spinDir;
     if (spinner.current) spinner.current.rotation.z = angle.current;
+    if (slider.current) slider.current.position.x = partX(placement, explode.current);
     if (edgeMat.current) {
       edgeMat.current.color.copy(dimmed ? dimColor : hovered || selected ? activeColor : idleColor);
-    }
-    if (ring.current) {
-      const s = 1 + 0.02 * Math.sin(state.clock.elapsedTime * 2);
-      ring.current.scale.set(s, s, 1);
     }
   });
 
@@ -78,7 +76,7 @@ export function Gear({ placement, project, spinDir }: Props) {
   };
 
   return (
-    <group position={position} quaternion={quaternion}>
+    <group ref={slider} quaternion={quaternion}>
       <group ref={spinner}>
         {/* Filled in the background colour: the body carries no tone of its own, it just
             hides the parts behind it, which is what makes this read as a line drawing. */}
@@ -94,12 +92,6 @@ export function Gear({ placement, project, spinDir }: Props) {
         <lineSegments geometry={edges}>
           <lineBasicMaterial ref={edgeMat} transparent opacity={dimmed ? 0.4 : 0.9} toneMapped={false} />
         </lineSegments>
-        {project.featured && (
-          <mesh ref={ring}>
-            <ringGeometry args={[radius * 1.16, radius * 1.18, 96]} />
-            <meshBasicMaterial color={ACCENT} transparent opacity={dimmed ? 0.15 : 0.9} side={DoubleSide} toneMapped={false} />
-          </mesh>
-        )}
       </group>
       {(hovered || selected) && !dimmed && (
         <Html position={[0, radius + 0.3, 0]} center distanceFactor={14} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>

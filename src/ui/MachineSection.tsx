@@ -51,15 +51,23 @@ export function MachineSection() {
   const webgl = useMemo(hasWebGL, []);
   return (
     <section className="machine" id="projects" aria-label="Projects">
-      {webgl ? (
-        <div className="machine__stage" role="group" tabIndex={0} onKeyDown={cycle} aria-label="Project constellation. Press Tab to step through projects.">
-          <Machine />
-        </div>
-      ) : (
-        <StaticProjects />
-      )}
-      <HeroOverlay />
-      {webgl && <DetailPanel />}
+      <div className="machine__frame">
+        {webgl ? (
+          <div
+            className="machine__stage"
+            role="group"
+            tabIndex={0}
+            onKeyDown={cycle}
+            aria-label="Exploded assembly. Press Tab to step through parts."
+          >
+            <Machine />
+          </div>
+        ) : (
+          <StaticProjects />
+        )}
+        <HeroOverlay />
+        {webgl && <DetailPanel />}
+      </div>
     </section>
   );
 }

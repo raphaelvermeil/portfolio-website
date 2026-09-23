@@ -9,8 +9,9 @@ function build(name: keyof typeof BUILDERS, seed = 7) {
 }
 
 describe('part builders', () => {
-  it('covers the eight archetypes', () => {
-    expect(PART_NAMES).toHaveLength(8);
+  it('exposes the full archetype set', () => {
+    expect(PART_NAMES.length).toBeGreaterThanOrEqual(16);
+    expect(new Set(PART_NAMES).size).toBe(PART_NAMES.length);
   });
 
   it.each(PART_NAMES)('%s produces non-empty geometry', (name) => {

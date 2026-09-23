@@ -44,12 +44,20 @@ h3,
 }
 
 /* --- Machine section ---------------------------------------------------- */
+/* Tall enough to give the explode somewhere to happen; the frame inside stays put. */
 .machine {
   position: relative;
+  height: 240svh;
+  width: 100%;
+  background: var(--bg);
+}
+
+.machine__frame {
+  position: sticky;
+  top: 0;
   height: 100vh;
   height: 100svh;
   width: 100%;
-  background: var(--bg);
   overflow: hidden;
 }
 
@@ -539,7 +547,8 @@ h3,
 }
 
 /* --- WebGL fallback ----------------------------------------------------- */
-.machine:has(.machine__fallback) {
+.machine:has(.machine__fallback),
+.machine__frame:has(.machine__fallback) {
   height: auto;
   min-height: 100svh;
   overflow: visible;
@@ -548,4 +557,43 @@ h3,
 .machine:has(.machine__fallback) .hero__hint,
 .machine:has(.machine__fallback) .hero__legend {
   display: none;
+}
+
+/* --- Scroll scrubber ----------------------------------------------------- */
+.scrubber {
+  position: relative;
+  display: block;
+  width: min(280px, 40vw);
+  height: 30px;
+  margin: 0 0 10px auto;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: #1f1e1c;
+  overflow: hidden;
+}
+
+.scrubber__track {
+  position: absolute;
+  inset: 8px 10px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(232, 230, 225, 0.55) 0 1px,
+    transparent 1px 6px
+  );
+}
+
+.scrubber__marker {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  width: 2px;
+  margin-inline-start: -1px;
+  background: var(--accent);
+  transition: inset-inline-start 0.08s linear;
+}
+
+@media (max-width: 640px) {
+  .scrubber {
+    margin-inline: 0 auto;
+  }
 }

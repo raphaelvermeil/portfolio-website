@@ -35,7 +35,16 @@ function toZAxis<T extends BufferGeometry>(geometry: T): T {
 /** ExtrudeGeometry is non-indexed while the primitives are indexed, so level them before merging. */
 function merge(parts: BufferGeometry[]): BufferGeometry {
   const flat = parts.map((g) => (g.index ? g.toNonIndexed() : g));
-  return mergeGeometries(flat, false) ?? flat[0];
+  const merged = mergeGeometries(flat, false) ?? flat[0];
+  // Sub-forms are positioned relative to each other, not to the origin.
+  merged.computeBoundingBox();
+  const box = merged.boundingBox!;
+  merged.translate(
+    -(box.min.x + box.max.x) / 2,
+    -(box.min.y + box.max.y) / 2,
+    -(box.min.z + box.max.z) / 2,
+  );
+  return merged;
 }
 
 function lathe(profile: [number, number][], segments: number): BufferGeometry {
@@ -167,6 +176,190 @@ export const turbineHub: PartBuilder = (radius, rand) => {
 export const spacerRing: PartBuilder = (radius, rand) =>
   new TorusGeometry(radius * 0.88, radius * between(rand, 0.06, 0.1), 10, RADIAL_SEGMENTS);
 
+
+/** Toothed rim carried on spokes, with a bossed hub. */
+export const spokedWheel: PartBuilder = (radius, rand) => {
+  const half = radius * between(rand, 0.09, 0.14);
+  const rimInner = radius * 0.76;
+  const rim = lathe(
+    [
+      [rimInner, -half],
+      [radius, -half],
+      [radius, half],
+      [rimInner, half],
+      [rimInner, -half],
+    ],
+    RADIAL_SEGMENTS,
+  );
+  const teeth = countBetween(rand, 16, 26);
+  const tooth = new BoxGeometry(radius * 0.13, radius * 0.11, half * 1.9);
+  const spokeCount = countBetween(rand, 3, 5);
+  const spoke = new BoxGeometry(rimInner * 0.9, radius * 0.09, half * 1.3);
+  const hub = toZAxis(new CylinderGeometry(radius * 0.2, radius * 0.24, half * 3, 12));
+  return merge([
+    rim,
+    hub,
+    ...ring(teeth, tooth, (a) => atAngle(a, radius * 1.02)),
+    ...ring(spokeCount, spoke, (a) => atAngle(a, rimInner * 0.5)),
+  ]);
+};
+
+/** Ring topped with square castellations, like a crown coupling. */
+export const castellatedCrown: PartBuilder = (radius, rand) => {
+  const half = radius * between(rand, 0.1, 0.16);
+  const body = lathe(
+    [
+      [radius * 0.62, -half],
+      [radius, -half],
+      [radius, half],
+      [radius * 0.62, half],
+      [radius * 0.62, -half],
+    ],
+    RADIAL_SEGMENTS,
+  );
+  const teeth = countBetween(rand, 10, 16);
+  const merlon = new BoxGeometry(radius * 0.34, radius * 0.16, half * 1.4);
+  return merge([body, ...ring(teeth, merlon, (a) => atAngle(a, radius * 0.81))]);
+};
+
+/** Radial bank of cylinders around a central case. */
+export const cylinderBank: PartBuilder = (radius, rand) => {
+  const depth = radius * between(rand, 0.34, 0.46);
+  const cases = countBetween(rand, 5, 8);
+  const cylinder = toZAxis(new CylinderGeometry(radius * 0.26, radius * 0.26, depth, 14));
+  const head = toZAxis(new CylinderGeometry(radius * 0.3, radius * 0.3, depth * 0.22, 14));
+  head.translate(0, 0, depth * 0.55);
+  const boss = toZAxis(new CylinderGeometry(radius * 0.34, radius * 0.42, depth * 1.1, 18));
+  const plate = lathe(
+    [
+      [0, -depth * 0.55],
+      [radius * 0.5, -depth * 0.55],
+      [radius * 0.5, -depth * 0.3],
+      [0, -depth * 0.3],
+    ],
+    RADIAL_SEGMENTS,
+  );
+  const bank = merge([cylinder, head]);
+  return merge([boss, plate, ...ring(cases, bank, (a) => atAngle(a, radius * 0.66))]);
+};
+
+/** Hub wearing a ring of radial cooling fins. */
+export const finnedCollar: PartBuilder = (radius, rand) => {
+  const depth = radius * between(rand, 0.26, 0.38);
+  const hub = toZAxis(new CylinderGeometry(radius * 0.46, radius * 0.46, depth, RADIAL_SEGMENTS));
+  const bore = lathe(
+    [
+      [radius * 0.2, -depth / 2],
+      [radius * 0.46, -depth / 2],
+      [radius * 0.46, depth / 2],
+      [radius * 0.2, depth / 2],
+      [radius * 0.2, -depth / 2],
+    ],
+    RADIAL_SEGMENTS,
+  );
+  const fins = countBetween(rand, 12, 20);
+  const fin = new BoxGeometry(radius * 0.56, radius * 0.045, depth * 0.86);
+  return merge([hub, bore, ...ring(fins, fin, (a) => atAngle(a, radius * 0.72))]);
+};
+
+/** Hex nut on a stepped collar. */
+export const hexBoss: PartBuilder = (radius, rand) => {
+  const depth = radius * between(rand, 0.4, 0.56);
+  const hex = toZAxis(new CylinderGeometry(radius, radius, depth, 6));
+  const collar = toZAxis(new CylinderGeometry(radius * 0.72, radius * 0.72, depth * 1.5, 20));
+  const washer = lathe(
+    [
+      [radius * 0.3, depth * 0.5],
+      [radius * 0.86, depth * 0.5],
+      [radius * 0.86, depth * 0.66],
+      [radius * 0.3, depth * 0.66],
+      [radius * 0.3, depth * 0.5],
+    ],
+    RADIAL_SEGMENTS,
+  );
+  return merge([hex, collar, washer]);
+};
+
+/** Disc with a lobed outline — a cam plate. */
+export const lobedCam: PartBuilder = (radius, rand) => {
+  const lobes = countBetween(rand, 6, 10);
+  const depth = radius * between(rand, 0.1, 0.16);
+  const points: Vector2[] = [];
+  const steps = lobes * 12;
+  for (let i = 0; i < steps; i++) {
+    const a = (i / steps) * Math.PI * 2;
+    const r = radius * (0.88 + 0.12 * Math.cos(a * lobes));
+    points.push(new Vector2(Math.cos(a) * r, Math.sin(a) * r));
+  }
+  const shape = new Shape(points);
+  const bore = new Path();
+  bore.absarc(0, 0, radius * 0.24, 0, Math.PI * 2, true);
+  shape.holes.push(bore);
+  const body = new ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 8 });
+  body.translate(0, 0, -depth / 2);
+  const hub = toZAxis(new CylinderGeometry(radius * 0.36, radius * 0.36, depth * 1.8, 18));
+  return merge([body, hub]);
+};
+
+/** Plate lightened by a ring of slots. */
+export const slottedDisc: PartBuilder = (radius, rand) => {
+  const depth = radius * between(rand, 0.07, 0.12);
+  const shape = new Shape();
+  shape.absarc(0, 0, radius, 0, Math.PI * 2, false);
+  const slots = countBetween(rand, 5, 8);
+  for (let i = 0; i < slots; i++) {
+    const a = (i / slots) * Math.PI * 2;
+    const slot = new Path();
+    slot.absarc(Math.cos(a) * radius * 0.6, Math.sin(a) * radius * 0.6, radius * 0.19, 0, Math.PI * 2, true);
+    shape.holes.push(slot);
+  }
+  const bore = new Path();
+  bore.absarc(0, 0, radius * 0.22, 0, Math.PI * 2, true);
+  shape.holes.push(bore);
+  const body = new ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 10 });
+  body.translate(0, 0, -depth / 2);
+  const hub = toZAxis(new CylinderGeometry(radius * 0.32, radius * 0.32, depth * 2.6, 18));
+  return merge([body, hub]);
+};
+
+/** Thin flat annulus that closes a stack. */
+export const retainingRing: PartBuilder = (radius, rand) => {
+  const half = radius * between(rand, 0.035, 0.06);
+  return lathe(
+    [
+      [radius * 0.78, -half],
+      [radius, -half],
+      [radius, half],
+      [radius * 0.78, half],
+      [radius * 0.78, -half],
+    ],
+    RADIAL_SEGMENTS,
+  );
+};
+
+/** Knurled barrel holding a domed element behind a retaining lip. */
+export const lensGroup: PartBuilder = (radius, rand) => {
+  const half = radius * between(rand, 0.22, 0.32);
+  const barrel = lathe(
+    [
+      [radius * 0.5, -half],
+      [radius, -half],
+      [radius, half],
+      [radius * 0.86, half],
+      [radius * 0.86, half * 0.55],
+      [radius * 0.5, half * 0.55],
+      [radius * 0.5, -half],
+    ],
+    RADIAL_SEGMENTS,
+  );
+  const grips = countBetween(rand, 30, 44);
+  const grip = new BoxGeometry(radius * 0.05, radius * 0.08, half * 1.7);
+  const dome = new SphereGeometry(radius * 0.62, 24, 12, 0, Math.PI * 2, 0, Math.PI / 3);
+  toZAxis(dome);
+  dome.translate(0, 0, -half * 0.5);
+  return merge([barrel, dome, ...ring(grips, grip, (a) => atAngle(a, radius))]);
+};
+
 export const BUILDERS = {
   spurGear,
   ringGear,
@@ -176,6 +369,15 @@ export const BUILDERS = {
   boltedFlange,
   turbineHub,
   spacerRing,
+  spokedWheel,
+  castellatedCrown,
+  cylinderBank,
+  finnedCollar,
+  hexBoss,
+  lobedCam,
+  slottedDisc,
+  retainingRing,
+  lensGroup,
 } as const;
 
 export type PartName = keyof typeof BUILDERS;

@@ -12,27 +12,45 @@ export interface AxisItem {
 export interface GearPlacement {
   id: string;
   language: string;
-  position: [number, number, number];
+  /** Offset along the axis when the machine is closed up. */
+  assembled: number;
+  /** Offset along the axis when it is pulled fully apart. */
+  exploded: number;
   quaternion: [number, number, number, number];
   radius: number;
 }
 
+/** Where a part sits for a given explode factor, 0 (closed) to 1 (apart). */
+export function partX(placement: GearPlacement, explode: number): number {
+  return placement.assembled + (placement.exploded - placement.assembled) * explode;
+}
+
 export interface AxisLayout {
   placements: GearPlacement[];
-  /** Distance from the first part's outer face to the last one's. */
-  length: number;
+  /** Axial extent when closed up. */
+  assembledLength: number;
+  /** Axial extent when pulled fully apart. */
+  explodedLength: number;
 }
 
 /** Air between neighbouring parts, as a share of the larger one's depth. */
 const GAP_RATIO = 1.6;
-const GAP_MIN = 0.45;
+const GAP_MIN = 0.62;
+/** A hair of daylight between seated faces, so edges never z-fight. */
+const SEAT_CLEARANCE = 0.05;
 
 /** Parts lie along +X; their own spin axis (+Z) is rotated to match. */
 const AXIS = new Vector3(1, 0, 0);
 const PART_AXIS = new Vector3(0, 0, 1);
 
-function spacing(a: AxisItem, b: AxisItem): number {
+/** Centre-to-centre distance with the parts pulled apart. */
+function explodedStep(a: AxisItem, b: AxisItem): number {
   return Math.max(GAP_MIN, Math.max(a.depth, b.depth) * GAP_RATIO);
+}
+
+/** Centre-to-centre distance with the parts stacked face to face. */
+function assembledStep(a: AxisItem, b: AxisItem): number {
+  return (a.depth + b.depth) / 2 + SEAT_CLEARANCE;
 }
 
 /**
@@ -64,27 +82,31 @@ export function orderItems(items: AxisItem[]): AxisItem[] {
   return [...left.reverse().flat(), ...right.flat()];
 }
 
+/** Places parts along the axis in the order given. */
 export function axisLayout(items: AxisItem[]): AxisLayout {
-  const ordered = orderItems(items);
-  if (ordered.length === 0) return { placements: [], length: 0 };
+  if (items.length === 0) return { placements: [], assembledLength: 0, explodedLength: 0 };
 
   const quaternion = new Quaternion().setFromUnitVectors(PART_AXIS, AXIS);
   const q: [number, number, number, number] = [quaternion.x, quaternion.y, quaternion.z, quaternion.w];
 
-  const offsets: number[] = [0];
-  for (let i = 1; i < ordered.length; i++) {
-    offsets.push(offsets[i - 1] + spacing(ordered[i - 1], ordered[i]));
+  const exploded: number[] = [0];
+  const assembled: number[] = [0];
+  for (let i = 1; i < items.length; i++) {
+    exploded.push(exploded[i - 1] + explodedStep(items[i - 1], items[i]));
+    assembled.push(assembled[i - 1] + assembledStep(items[i - 1], items[i]));
   }
 
-  const length = offsets[offsets.length - 1];
-  const centre = length / 2;
+  const explodedLength = exploded[exploded.length - 1];
+  const assembledLength = assembled[assembled.length - 1];
 
   return {
-    length,
-    placements: ordered.map((item, i) => ({
+    explodedLength,
+    assembledLength,
+    placements: items.map((item, i) => ({
       id: item.id,
       language: languageLabel(item.language),
-      position: [offsets[i] - centre, 0, 0],
+      assembled: assembled[i] - assembledLength / 2,
+      exploded: exploded[i] - explodedLength / 2,
       quaternion: q,
       radius: item.radius,
     })),

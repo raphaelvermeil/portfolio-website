@@ -7,13 +7,16 @@ import { useMediaQuery, useReducedMotion } from '../lib/hooks';
 import { useStore } from '../lib/store';
 import { CameraRig } from './CameraRig';
 import { Gear } from './Gear';
-import { machineLength, placements, spinDirById } from './machine';
+import { useExplodeOnScroll } from './explode';
+import { assembledLength, machineLength, placements, spinDirById } from './machine';
 import { BACKGROUND, INK_DIM } from './theme';
 
 /** The camera sits back far enough to frame the whole assembly, viewed three-quarter. */
 const VIEW_DIRECTION = [0.3, 0.24, 1] as const;
 /** Multiple of the assembly length to stand back by, so it fills most of the frame. */
-const FRAMING = 1.05;
+const FRAMING = 1.9;
+/** A long lens flattens perspective, the way a technical illustration is drawn. */
+const FOV = 22;
 
 /** Centre line the parts are threaded onto, extending a little past the end parts. */
 function Spindle() {
@@ -43,6 +46,8 @@ export function Machine() {
   const setSelected = useStore((s) => s.setSelected);
   const markInteracted = useStore((s) => s.markInteracted);
 
+  useExplodeOnScroll('.machine');
+
   useEffect(() => {
     const onVisibility = () => setFrameloop(document.hidden ? 'never' : 'always');
     document.addEventListener('visibilitychange', onVisibility);
@@ -50,8 +55,10 @@ export function Machine() {
   }, []);
 
   // A narrow viewport sees the machine end-on-ish, so pull back further.
-  const distance = machineLength * (small ? FRAMING * 1.35 : FRAMING);
-  const scale = distance / Math.hypot(...VIEW_DIRECTION);
+  const framing = small ? FRAMING * 1.35 : FRAMING;
+  const distance = machineLength * framing;
+  const assembledDistance = Math.max(assembledLength * framing, 8);
+  const scale = assembledDistance / Math.hypot(...VIEW_DIRECTION);
   const cameraPosition: [number, number, number] = [
     VIEW_DIRECTION[0] * scale,
     VIEW_DIRECTION[1] * scale,
@@ -62,7 +69,7 @@ export function Machine() {
     <Canvas
       dpr={[1, 2]}
       frameloop={frameloop}
-      camera={{ position: cameraPosition, fov: 40, near: 0.1, far: 200 }}
+      camera={{ position: cameraPosition, fov: FOV, near: 0.1, far: 200 }}
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       onPointerMissed={() => setSelected(null)}
     >
@@ -85,7 +92,7 @@ export function Machine() {
         touches={{ ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_ROTATE }}
         onStart={markInteracted}
       />
-      <CameraRig homeDistance={distance} />
+      <CameraRig assembledDistance={assembledDistance} explodedDistance={distance} />
     </Canvas>
   );
 }

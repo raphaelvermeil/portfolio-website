@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { axisLayout, orderItems, type AxisItem } from './axisLayout';
+import { axisLayout, orderItems, partX, type AxisItem } from './axisLayout';
 
 const item = (id: string, language: string | null, radius = 1, depth = 0.4): AxisItem => ({
   id,
@@ -56,37 +56,44 @@ describe('orderItems', () => {
 });
 
 describe('axisLayout', () => {
-  const { placements, length } = axisLayout(items);
+  const { placements, assembledLength, explodedLength } = axisLayout(orderItems(items));
 
-  it('places every part on the X axis, centred on the origin', () => {
+  it('places every part and centres both states on the origin', () => {
     expect(placements).toHaveLength(items.length);
-    for (const p of placements) {
-      expect(p.position[1]).toBe(0);
-      expect(p.position[2]).toBe(0);
+    for (const key of ['assembled', 'exploded'] as const) {
+      const xs = placements.map((p) => p[key]);
+      expect(Math.min(...xs) + Math.max(...xs)).toBeCloseTo(0, 6);
     }
-    const xs = placements.map((p) => p.position[0]);
-    expect(Math.min(...xs) + Math.max(...xs)).toBeCloseTo(0, 6);
   });
 
-  it('orders positions monotonically along the axis', () => {
-    const xs = placements.map((p) => p.position[0]);
-    expect(xs).toEqual([...xs].sort((a, b) => a - b));
+  it('orders both states monotonically along the axis', () => {
+    for (const key of ['assembled', 'exploded'] as const) {
+      const xs = placements.map((p) => p[key]);
+      expect(xs).toEqual([...xs].sort((a, b) => a - b));
+    }
   });
 
-  it('leaves a gap between neighbours', () => {
-    const xs = placements.map((p) => p.position[0]);
-    for (let i = 1; i < xs.length; i++) expect(xs[i] - xs[i - 1]).toBeGreaterThanOrEqual(0.32);
+  it('seats parts face to face when assembled, without overlapping', () => {
+    const ordered = orderItems(items);
+    for (let i = 1; i < placements.length; i++) {
+      const step = placements[i].assembled - placements[i - 1].assembled;
+      expect(step).toBeGreaterThanOrEqual((ordered[i].depth + ordered[i - 1].depth) / 2);
+    }
+  });
+
+  it('pulls further apart when exploded than when assembled', () => {
+    expect(explodedLength).toBeGreaterThan(assembledLength);
+    for (let i = 1; i < placements.length; i++) {
+      const apart = placements[i].exploded - placements[i - 1].exploded;
+      const closed = placements[i].assembled - placements[i - 1].assembled;
+      expect(apart).toBeGreaterThanOrEqual(closed);
+    }
   });
 
   it('spaces deeper parts further apart', () => {
     const shallow = axisLayout([item('a', 'Java', 1, 0.2), item('b', 'Java', 1, 0.2)]);
     const deep = axisLayout([item('a', 'Java', 1, 1.5), item('b', 'Java', 1, 1.5)]);
-    expect(deep.length).toBeGreaterThan(shallow.length);
-  });
-
-  it('reports the assembly length', () => {
-    const xs = placements.map((p) => p.position[0]);
-    expect(length).toBeCloseTo(Math.max(...xs) - Math.min(...xs), 6);
+    expect(deep.explodedLength).toBeGreaterThan(shallow.explodedLength);
   });
 
   it('turns every part to face along the axis', () => {
@@ -100,6 +107,19 @@ describe('axisLayout', () => {
   });
 
   it('handles an empty assembly', () => {
-    expect(axisLayout([])).toEqual({ placements: [], length: 0 });
+    expect(axisLayout([])).toEqual({ placements: [], assembledLength: 0, explodedLength: 0 });
+  });
+});
+
+describe('partX', () => {
+  const [a] = axisLayout([item('a', 'Java', 1, 0.4), item('b', 'Java', 1, 0.4)]).placements;
+
+  it('returns the assembled position at 0 and the exploded one at 1', () => {
+    expect(partX(a, 0)).toBeCloseTo(a.assembled, 6);
+    expect(partX(a, 1)).toBeCloseTo(a.exploded, 6);
+  });
+
+  it('interpolates in between', () => {
+    expect(partX(a, 0.5)).toBeCloseTo((a.assembled + a.exploded) / 2, 6);
   });
 });
