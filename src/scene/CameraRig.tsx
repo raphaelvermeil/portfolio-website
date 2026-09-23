@@ -8,7 +8,6 @@ interface ControlsLike {
   target: Vector3;
 }
 
-const HOME_DISTANCE = 16;
 const FOCUS_OFFSET = 6;
 const SMOOTHING = 4;
 const SETTLE_EPSILON = 0.05;
@@ -18,7 +17,7 @@ const SETTLE_EPSILON = 0.05;
  * The camera position is only driven while a transition is in progress, so user
  * zoom/orbit persists once settled. Runs before drei's OrbitControls update (-1).
  */
-export function CameraRig() {
+export function CameraRig({ homeDistance }: { homeDistance: number }) {
   const selected = useStore((s) => s.selected);
   const controls = useThree((s) => s.controls) as unknown as ControlsLike | null;
   const gl = useThree((s) => s.gl);
@@ -48,7 +47,7 @@ export function CameraRig() {
 
     if (!transitioning.current) return;
     if (p) desired.copy(target).normalize().multiplyScalar(target.length() + FOCUS_OFFSET);
-    else desired.copy(camera.position).normalize().multiplyScalar(HOME_DISTANCE);
+    else desired.copy(camera.position).normalize().multiplyScalar(homeDistance);
     camera.position.x = MathUtils.damp(camera.position.x, desired.x, SMOOTHING, dt);
     camera.position.y = MathUtils.damp(camera.position.y, desired.y, SMOOTHING, dt);
     camera.position.z = MathUtils.damp(camera.position.z, desired.z, SMOOTHING, dt);

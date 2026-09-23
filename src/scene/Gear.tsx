@@ -6,15 +6,10 @@ import { useReducedMotion } from '../lib/hooks';
 import { languageColor } from '../lib/palette';
 import { useStore } from '../lib/store';
 import type { Project } from '../lib/types';
-import type { GearPlacement } from './layout';
-import { createPart } from './parts';
+import type { GearPlacement } from './axisLayout';
+import { partById } from './machine';
+import { BACKGROUND, EDGE_THRESHOLD_DEG, INK, INK_DIM, ACCENT } from './theme';
 
-/**
- * Edges are only drawn where faces meet at more than this angle. It sits above the
- * 10° facets of a revolved surface (so seams stay hidden) and below the profile
- * steps, tooth flanks and box corners that define a part's silhouette.
- */
-const EDGE_THRESHOLD_DEG = 24;
 const BASE_SPEED = 0.15;
 const HOVER_MULT = 4;
 const SELECT_MULT = 2;
@@ -27,12 +22,13 @@ interface Props {
 
 export function Gear({ placement, project, spinDir }: Props) {
   const { id, language, radius, position, quaternion } = placement;
-  const geometry = useMemo(() => createPart({ id, language, radius }), [id, language, radius]);
+  const geometry = partById[id];
   const edges = useMemo(() => new EdgesGeometry(geometry, EDGE_THRESHOLD_DEG), [geometry]);
-  const baseColor = useMemo(() => new Color(languageColor(project.language)), [project.language]);
-  /** Revolved parts have no hard edges along their axis, so a solid body carries the
-   *  silhouette and occludes what is behind it; the bright edges draw the detail. */
-  const fillColor = useMemo(() => baseColor.clone().multiplyScalar(0.14), [baseColor]);
+
+  /** Monochrome at rest, so the assembly reads as one drawing; colour marks attention. */
+  const idleColor = useMemo(() => new Color(INK), []);
+  const activeColor = useMemo(() => new Color(languageColor(project.language)), [project.language]);
+  const dimColor = useMemo(() => new Color(INK_DIM), []);
 
   const spinner = useRef<Group>(null);
   const ring = useRef<Mesh>(null);
@@ -47,7 +43,7 @@ export function Gear({ placement, project, spinDir }: Props) {
   const setSelected = useStore((s) => s.setSelected);
   const reduced = useReducedMotion();
 
-  const dimmed = filter !== null && filter !== placement.language;
+  const dimmed = filter !== null && filter !== language;
   useCursor(localHover && !dimmed);
 
   useFrame((state, dt) => {
@@ -57,11 +53,10 @@ export function Gear({ placement, project, spinDir }: Props) {
     angle.current += dt * speed * spinDir;
     if (spinner.current) spinner.current.rotation.z = angle.current;
     if (edgeMat.current) {
-      const target = dimmed ? 0.6 : hovered || selected ? 2.4 : 1.5;
-      edgeMat.current.color.copy(baseColor).multiplyScalar(target);
+      edgeMat.current.color.copy(dimmed ? dimColor : hovered || selected ? activeColor : idleColor);
     }
     if (ring.current) {
-      const s = 1 + 0.03 * Math.sin(state.clock.elapsedTime * 2);
+      const s = 1 + 0.02 * Math.sin(state.clock.elapsedTime * 2);
       ring.current.scale.set(s, s, 1);
     }
   });
@@ -85,12 +80,11 @@ export function Gear({ placement, project, spinDir }: Props) {
   return (
     <group position={position} quaternion={quaternion}>
       <group ref={spinner}>
+        {/* Filled in the background colour: the body carries no tone of its own, it just
+            hides the parts behind it, which is what makes this read as a line drawing. */}
         <mesh geometry={geometry} onPointerOver={onOver} onPointerOut={onOut} onClick={onClick}>
           <meshBasicMaterial
-            color={fillColor}
-            transparent={dimmed}
-            opacity={dimmed ? 0.12 : 1}
-            depthWrite={!dimmed}
+            color={BACKGROUND}
             side={DoubleSide}
             polygonOffset
             polygonOffsetFactor={1}
@@ -98,20 +92,20 @@ export function Gear({ placement, project, spinDir }: Props) {
           />
         </mesh>
         <lineSegments geometry={edges}>
-          <lineBasicMaterial ref={edgeMat} transparent opacity={dimmed ? 0.15 : 1} toneMapped={false} />
+          <lineBasicMaterial ref={edgeMat} transparent opacity={dimmed ? 0.4 : 0.9} toneMapped={false} />
         </lineSegments>
         {project.featured && (
           <mesh ref={ring}>
-            <ringGeometry args={[radius * 1.12, radius * 1.15, 64]} />
-            <meshBasicMaterial color="#5ee1ff" transparent opacity={dimmed ? 0.1 : 0.7} side={DoubleSide} toneMapped={false} />
+            <ringGeometry args={[radius * 1.16, radius * 1.18, 96]} />
+            <meshBasicMaterial color={ACCENT} transparent opacity={dimmed ? 0.15 : 0.9} side={DoubleSide} toneMapped={false} />
           </mesh>
         )}
       </group>
       {(hovered || selected) && !dimmed && (
-        <Html position={[0, radius + 0.35, 0]} center distanceFactor={12} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+        <Html position={[0, radius + 0.3, 0]} center distanceFactor={14} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
           <div className="gear-label">
             <span className="gear-label__name">{project.title}</span>
-            <span className="gear-label__lang">{placement.language}</span>
+            <span className="gear-label__lang">{language}</span>
           </div>
         </Html>
       )}

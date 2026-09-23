@@ -15,10 +15,6 @@ body {
   font-family: var(--sans);
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
-  background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 48px 48px;
 }
 
 a {
@@ -424,7 +420,7 @@ h3,
   margin: 0 auto;
   padding: clamp(24px, 4vw, 48px);
   border: 1px solid var(--line);
-  background: rgba(11, 15, 23, 0.6);
+  background: transparent;
 }
 
 .sheet__frame::before,

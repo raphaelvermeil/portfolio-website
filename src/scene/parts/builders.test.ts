@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mulberry32 } from '../layout';
+import { mulberry32 } from '../../lib/random';
 import { BUILDERS, PART_NAMES } from './builders';
 
 const RADIUS = 1.2;

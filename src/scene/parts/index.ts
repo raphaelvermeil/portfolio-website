@@ -1,5 +1,5 @@
 import type { BufferGeometry } from 'three';
-import { hashString, mulberry32 } from '../layout';
+import { hashString, mulberry32 } from '../../lib/random';
 import { BUILDERS, PART_NAMES, type PartName } from './builders';
 
 /** One archetype per language, so each cluster reads as a related sub-assembly. */
