@@ -5,19 +5,19 @@ import { PART_NAMES, buildPart } from './index';
 describe('buildPart', () => {
   it('builds every archetype', () => {
     for (const name of PART_NAMES) {
-      expect(buildPart(name, 1.2, 'seed').getAttribute('position').count).toBeGreaterThan(0);
+      expect(buildPart(name, 1.2, 'seed').body.getAttribute('position').count).toBeGreaterThan(0);
     }
   });
 
   it('is deterministic for a given seed', () => {
-    const a = buildPart('spokedWheel', 1.1, 'alpha').getAttribute('position').array;
-    const b = buildPart('spokedWheel', 1.1, 'alpha').getAttribute('position').array;
+    const a = buildPart('spokedWheel', 1.1, 'alpha').body.getAttribute('position').array;
+    const b = buildPart('spokedWheel', 1.1, 'alpha').body.getAttribute('position').array;
     expect(Array.from(a)).toEqual(Array.from(b));
   });
 
   it('varies between seeds', () => {
-    const a = buildPart('finnedCollar', 1.1, 'alpha').getAttribute('position').count;
-    const b = buildPart('finnedCollar', 1.1, 'omega').getAttribute('position').count;
+    const a = buildPart('finnedCollar', 1.1, 'alpha').body.getAttribute('position').count;
+    const b = buildPart('finnedCollar', 1.1, 'omega').body.getAttribute('position').count;
     expect(a).not.toBe(b);
   });
 });

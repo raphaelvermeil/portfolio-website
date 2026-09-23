@@ -1,9 +1,9 @@
-import type { BufferGeometry } from 'three';
 import { projects } from '../lib/data';
 import type { Project } from '../lib/types';
 import { ASSEMBLY } from './assembly';
+import type { PartMotion } from './motion';
 import { axisLayout, type AxisItem, type GearPlacement } from './axisLayout';
-import { buildPart } from './parts';
+import { buildPart, type PartPieces } from './parts';
 
 /**
  * The assembly is composed by hand, so it carries no repo data of its own. Each
@@ -13,20 +13,35 @@ import { buildPart } from './parts';
  */
 const paired = ASSEMBLY.slice(0, projects.length);
 
-/** Each part is built once here; Gear reads its geometry back rather than rebuilding. */
-export const partById: Record<string, BufferGeometry> = {};
+/** Each part is built once here; Gear reads its pieces back rather than rebuilding. */
+export const partById: Record<string, PartPieces> = {};
+
+/**
+ * Axial extent of a part including its movers at full travel, so the layout
+ * leaves room for pistons at the top of their stroke.
+ */
+function axialDepth(pieces: PartPieces): number {
+  pieces.body.computeBoundingBox();
+  let min = pieces.body.boundingBox!.min.z;
+  let max = pieces.body.boundingBox!.max.z;
+  for (const mover of pieces.movers) {
+    mover.geometry.computeBoundingBox();
+    const travel = mover.motion.kind === 'reciprocate' ? mover.motion.travel : 0;
+    min = Math.min(min, mover.geometry.boundingBox!.min.z + mover.offset[2] - travel);
+    max = Math.max(max, mover.geometry.boundingBox!.max.z + mover.offset[2] + travel);
+  }
+  return max - min;
+}
 
 const items: AxisItem[] = paired.map((part, i) => {
   const project = projects[i];
-  const geometry = buildPart(part.name, part.radius, `${part.name}-${i}-${project.id}`);
-  geometry.computeBoundingBox();
-  const box = geometry.boundingBox!;
-  partById[project.id] = geometry;
+  const pieces = buildPart(part.name, part.radius, `${part.name}-${i}-${project.id}`);
+  partById[project.id] = pieces;
   return {
     id: project.id,
     language: project.language,
     radius: part.radius,
-    depth: box.max.z - box.min.z,
+    depth: axialDepth(pieces),
   };
 });
 
@@ -44,7 +59,7 @@ export const machineProjects: Project[] = paired.map((_, i) => projects[i]);
 export const assembledLength = layout.assembledLength;
 export const machineLength = layout.explodedLength;
 
-/** Neighbouring parts counter-rotate, the way a gear train does. */
-export const spinDirById: Record<string, 1 | -1> = Object.fromEntries(
-  placements.map((p, i) => [p.id, i % 2 === 0 ? 1 : -1] as const),
+/** How each part moves, taken from the assembly it was composed in. */
+export const motionById: Record<string, PartMotion> = Object.fromEntries(
+  placements.map((p, i) => [p.id, paired[i].motion] as const),
 );

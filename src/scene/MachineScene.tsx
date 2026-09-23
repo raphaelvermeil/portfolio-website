@@ -8,7 +8,7 @@ import { useStore } from '../lib/store';
 import { CameraRig } from './CameraRig';
 import { Gear } from './Gear';
 import { useExplodeOnScroll } from './explode';
-import { assembledLength, machineLength, placements, spinDirById } from './machine';
+import { assembledLength, machineLength, motionById, placements } from './machine';
 import { BACKGROUND, INK_DIM } from './theme';
 
 /** The camera sits back far enough to frame the whole assembly, viewed three-quarter. */
@@ -76,7 +76,7 @@ export function Machine() {
       <color attach="background" args={[BACKGROUND]} />
       <Spindle />
       {placements.map((p) => (
-        <Gear key={p.id} placement={p} project={projectById[p.id]} spinDir={spinDirById[p.id] ?? 1} />
+        <Gear key={p.id} placement={p} project={projectById[p.id]} motion={motionById[p.id]} />
       ))}
       <OrbitControls
         makeDefault

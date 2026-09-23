@@ -13,9 +13,28 @@ import {
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { createGearGeometry, gearOutline, teethFor } from '../gearGeometry';
+import type { MoverMotion } from '../motion';
 
-/** Every builder returns a geometry centred on the origin whose spin axis is +Z. */
-export type PartBuilder = (radius: number, rand: () => number) => BufferGeometry;
+/** A sub-assembly that moves independently of the part carrying it. */
+export interface Mover {
+  /** Centred on its own origin, so it can turn about itself. */
+  geometry: BufferGeometry;
+  /** Where it sits within the part. */
+  offset: [number, number, number];
+  motion: MoverMotion;
+}
+
+export interface PartPieces {
+  /** The part's own structure, which moves with the part. */
+  body: BufferGeometry;
+  movers: Mover[];
+}
+
+/**
+ * Builders return a geometry centred on the origin whose spin axis is +Z, or a
+ * body plus movers when the part has pieces of its own that move.
+ */
+export type PartBuilder = (radius: number, rand: () => number) => BufferGeometry | PartPieces;
 
 const Y_TO_Z = new Matrix4().makeRotationX(Math.PI / 2);
 
@@ -64,6 +83,11 @@ function atAngle(angle: number, distance: number, tilt = 0): Matrix4 {
   return new Matrix4()
     .makeTranslation(Math.cos(angle) * distance, Math.sin(angle) * distance, 0)
     .multiply(new Matrix4().makeRotationZ(angle + tilt));
+}
+
+/** Normalises a builder's result: a bare geometry is a body with no movers. */
+export function toPieces(result: BufferGeometry | PartPieces): PartPieces {
+  return 'body' in result ? result : { body: result, movers: [] };
 }
 
 const between = (rand: () => number, lo: number, hi: number) => lo + rand() * (hi - lo);
@@ -219,16 +243,23 @@ export const castellatedCrown: PartBuilder = (radius, rand) => {
   );
   const teeth = countBetween(rand, 10, 16);
   const merlon = new BoxGeometry(radius * 0.34, radius * 0.16, half * 1.4);
-  return merge([body, ...ring(teeth, merlon, (a) => atAngle(a, radius * 0.81))]);
+  const movers: Mover[] = [];
+  for (let i = 0; i < teeth; i++) {
+    const a = (i / teeth) * Math.PI * 2;
+    movers.push({
+      geometry: merlon.clone().applyMatrix4(new Matrix4().makeRotationZ(a)),
+      offset: [Math.cos(a) * radius * 0.81, Math.sin(a) * radius * 0.81, 0],
+      // A travelling wave around the ring rather than all of them together.
+      motion: { kind: 'reciprocate', travel: half * 0.9, hz: 0.4, phase: i / teeth },
+    });
+  }
+  return { body, movers };
 };
 
-/** Radial bank of cylinders around a central case. */
+/** Radial engine: a case carrying pistons that reciprocate along the axis. */
 export const cylinderBank: PartBuilder = (radius, rand) => {
   const depth = radius * between(rand, 0.34, 0.46);
   const cases = countBetween(rand, 5, 8);
-  const cylinder = toZAxis(new CylinderGeometry(radius * 0.26, radius * 0.26, depth, 14));
-  const head = toZAxis(new CylinderGeometry(radius * 0.3, radius * 0.3, depth * 0.22, 14));
-  head.translate(0, 0, depth * 0.55);
   const boss = toZAxis(new CylinderGeometry(radius * 0.34, radius * 0.42, depth * 1.1, 18));
   const plate = lathe(
     [
@@ -239,8 +270,25 @@ export const cylinderBank: PartBuilder = (radius, rand) => {
     ],
     RADIAL_SEGMENTS,
   );
-  const bank = merge([cylinder, head]);
-  return merge([boss, plate, ...ring(cases, bank, (a) => atAngle(a, radius * 0.66))]);
+  const sleeve = toZAxis(new CylinderGeometry(radius * 0.3, radius * 0.3, depth * 1.15, 14));
+  const piston = toZAxis(new CylinderGeometry(radius * 0.24, radius * 0.24, depth * 0.6, 14));
+  const crown = toZAxis(new CylinderGeometry(radius * 0.26, radius * 0.26, depth * 0.14, 14));
+  crown.translate(0, 0, depth * 0.34);
+  const slug = merge([piston, crown]);
+  const movers: Mover[] = [];
+  const sleeves: BufferGeometry[] = [];
+  for (let i = 0; i < cases; i++) {
+    const a = (i / cases) * Math.PI * 2;
+    const offset: [number, number, number] = [Math.cos(a) * radius * 0.66, Math.sin(a) * radius * 0.66, 0];
+    sleeves.push(sleeve.clone().translate(offset[0], offset[1], 0));
+    movers.push({
+      geometry: slug.clone(),
+      offset,
+      // Opposed pairs: each piston sits half a beat from the one across the case.
+      motion: { kind: 'reciprocate', travel: depth * 0.3, hz: 0.55, phase: i / cases },
+    });
+  }
+  return { body: merge([boss, plate, ...sleeves]), movers };
 };
 
 /** Hub wearing a ring of radial cooling fins. */
@@ -360,6 +408,37 @@ export const lensGroup: PartBuilder = (radius, rand) => {
   return merge([barrel, dome, ...ring(grips, grip, (a) => atAngle(a, radius))]);
 };
 
+/** A carrier holding several small gears that mesh side by side on one plane. */
+export const gearCluster: PartBuilder = (radius, rand) => {
+  const satellites = countBetween(rand, 4, 6);
+  const orbit = radius * 0.6;
+  // Sized so neighbouring satellites very nearly touch, as a meshing train would.
+  const satelliteRadius = Math.min(radius * 0.42, orbit * Math.sin(Math.PI / satellites) * 0.96);
+  const half = radius * 0.07;
+  const carrier = lathe(
+    [
+      [radius * 0.14, -half],
+      [radius, -half],
+      [radius, half],
+      [radius * 0.14, half],
+      [radius * 0.14, -half],
+    ],
+    RADIAL_SEGMENTS,
+  );
+  const spindle = toZAxis(new CylinderGeometry(radius * 0.2, radius * 0.2, half * 4, 14));
+  const movers: Mover[] = [];
+  for (let i = 0; i < satellites; i++) {
+    const a = (i / satellites) * Math.PI * 2;
+    movers.push({
+      geometry: createGearGeometry(satelliteRadius, teethFor(satelliteRadius), half * 2.4),
+      offset: [Math.cos(a) * orbit, Math.sin(a) * orbit, 0],
+      // Meshing neighbours must turn opposite ways.
+      motion: { kind: 'spin', turnsPerSecond: i % 2 === 0 ? 0.22 : -0.22 },
+    });
+  }
+  return { body: merge([carrier, spindle]), movers };
+};
+
 export const BUILDERS = {
   spurGear,
   ringGear,
@@ -378,6 +457,7 @@ export const BUILDERS = {
   slottedDisc,
   retainingRing,
   lensGroup,
+  gearCluster,
 } as const;
 
 export type PartName = keyof typeof BUILDERS;

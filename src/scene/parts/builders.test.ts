@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../lib/random';
-import { BUILDERS, PART_NAMES } from './builders';
+import { BUILDERS, PART_NAMES, toPieces } from './builders';
 
 const RADIUS = 1.2;
 
+/** The body alone: movers are checked separately, since they sit off-centre by design. */
 function build(name: keyof typeof BUILDERS, seed = 7) {
-  return BUILDERS[name](RADIUS, mulberry32(seed));
+  return toPieces(BUILDERS[name](RADIUS, mulberry32(seed))).body;
+}
+
+function pieces(name: keyof typeof BUILDERS, seed = 7) {
+  return toPieces(BUILDERS[name](RADIUS, mulberry32(seed)));
 }
 
 describe('part builders', () => {
@@ -55,10 +60,38 @@ describe('part builders', () => {
   });
 
   it('scales with radius', () => {
-    const small = BUILDERS.bearing(0.6, mulberry32(3));
-    const large = BUILDERS.bearing(1.6, mulberry32(3));
+    const small = toPieces(BUILDERS.bearing(0.6, mulberry32(3))).body;
+    const large = toPieces(BUILDERS.bearing(1.6, mulberry32(3))).body;
     small.computeBoundingSphere();
     large.computeBoundingSphere();
     expect(large.boundingSphere!.radius).toBeGreaterThan(small.boundingSphere!.radius * 2);
+  });
+
+  it.each(PART_NAMES)('%s centres each of its movers on its own origin', (name) => {
+    for (const mover of pieces(name).movers) {
+      mover.geometry.computeBoundingBox();
+      const { min, max } = mover.geometry.boundingBox!;
+      expect(Math.abs(min.x + max.x)).toBeLessThan(RADIUS * 0.1);
+      expect(Math.abs(min.y + max.y)).toBeLessThan(RADIUS * 0.1);
+      expect(Math.abs(min.z + max.z)).toBeLessThan(RADIUS * 0.1);
+    }
+  });
+
+  it('gives the cylinder bank pistons on opposed phases', () => {
+    const { movers } = pieces('cylinderBank');
+    expect(movers.length).toBeGreaterThanOrEqual(5);
+    const phases = movers.map((m) => (m.motion.kind === 'reciprocate' ? m.motion.phase : -1));
+    expect(new Set(phases).size).toBe(movers.length);
+  });
+
+  it('meshes the gear cluster: neighbours counter-rotate and nearly touch', () => {
+    const { movers } = pieces('gearCluster');
+    expect(movers.length).toBeGreaterThanOrEqual(4);
+    const rates = movers.map((m) => (m.motion.kind === 'spin' ? m.motion.turnsPerSecond : 0));
+    for (let i = 1; i < rates.length; i++) expect(Math.sign(rates[i])).toBe(-Math.sign(rates[i - 1]));
+    const [a, b] = movers;
+    const gap = Math.hypot(a.offset[0] - b.offset[0], a.offset[1] - b.offset[1]);
+    a.geometry.computeBoundingSphere();
+    expect(gap).toBeLessThanOrEqual(a.geometry.boundingSphere!.radius * 2.2);
   });
 });
