@@ -2,7 +2,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useMemo } from 'react';
 import { MathUtils, Vector3 } from 'three';
 import { CAMERA_PATH, cameraAt, framingDistance, posePosition } from './cameraPath';
-import { explode } from './explode';
+import { actProgress, stage } from './timeline';
 
 /** How quickly the camera catches up to the scroll position. */
 const SMOOTHING = 6;
@@ -34,7 +34,7 @@ export function ScrollCamera({ assembledLength, explodedLength, diameter, fov, m
   const desired = useMemo(() => new Vector3(), []);
 
   useFrame(({ camera }, dt) => {
-    const progress = explode.current;
+    const progress = actProgress(stage.current, 'explode');
     const pose = cameraAt(CAMERA_PATH, progress);
     const length = assembledLength + (explodedLength - assembledLength) * progress;
     const [x, y, z] = posePosition(pose, framingDistance(pose, length, diameter, fov, aspect, margin));

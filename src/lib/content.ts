@@ -2,6 +2,8 @@ import { loadYaml } from './yaml';
 
 export interface SiteConfig {
   name: string;
+  /** Oversized line on the landing; falls back to the tagline. */
+  role: string;
   tagline: string;
   github: string;
   email: string;
@@ -30,6 +32,7 @@ export function parseSite(yamlText: string): SiteConfig {
   return {
     name: requireString(doc, 'name', 'site.yml'),
     tagline: requireString(doc, 'tagline', 'site.yml'),
+    role: optionalString(doc, 'role') ?? requireString(doc, 'tagline', 'site.yml'),
     github: requireString(doc, 'github', 'site.yml'),
     email: requireString(doc, 'email', 'site.yml'),
     linkedin: optionalString(doc, 'linkedin'),

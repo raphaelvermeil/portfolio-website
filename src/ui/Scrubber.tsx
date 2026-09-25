@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { scrollExplode } from '../scene/explode';
+import { scrollStage } from '../scene/timeline';
 
 /**
  * Ruler showing how far the machine has come apart. Written straight to the DOM
@@ -11,7 +11,7 @@ export function Scrubber() {
   useEffect(() => {
     const update = () => {
       const hero = document.querySelector('.machine');
-      const progress = scrollExplode(window.scrollY, hero?.clientHeight ?? 0, window.innerHeight);
+      const progress = scrollStage(window.scrollY, hero?.clientHeight ?? 0, window.innerHeight);
       if (marker.current) marker.current.style.insetInlineStart = `${progress * 100}%`;
     };
     update();

@@ -1,11 +1,13 @@
-import { useMemo, type KeyboardEvent } from 'react';
+import { useCallback, useMemo, useRef, type KeyboardEvent } from 'react';
 import { projects } from '../lib/data';
 import { useStore } from '../lib/store';
 import { hasWebGL } from '../lib/webgl';
 import { Machine } from '../scene/MachineScene';
 import { placements } from '../scene/machine';
+import { actProgress, useStageEffect } from '../scene/timeline';
 import { DetailPanel } from './DetailPanel';
 import { HeroOverlay } from './HeroOverlay';
+import { TitleCard } from './TitleCard';
 
 function StaticProjects() {
   return (
@@ -49,12 +51,25 @@ function cycle(e: KeyboardEvent<HTMLDivElement>) {
 
 export function MachineSection() {
   const webgl = useMemo(hasWebGL, []);
+  const stageRef = useRef<HTMLDivElement>(null);
+
+  const fade = useCallback((master: number) => {
+    const node = stageRef.current;
+    if (!node) return;
+    // Up as the type clears, down again as the projects arrive.
+    const visible = actProgress(master, 'machineIn') * (1 - actProgress(master, 'machineOut'));
+    node.style.opacity = String(visible);
+  }, []);
+
+  useStageEffect('.machine', fade);
   return (
     <section className="machine" id="projects" aria-label="Projects">
       <div className="machine__frame">
+        <TitleCard />
         {webgl ? (
           <div
             className="machine__stage"
+            ref={stageRef}
             role="group"
             tabIndex={0}
             onKeyDown={cycle}

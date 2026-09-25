@@ -14,7 +14,7 @@ import { languageColor } from '../lib/palette';
 import { useStore } from '../lib/store';
 import type { Project } from '../lib/types';
 import { partX, type GearPlacement } from './axisLayout';
-import { explode } from './explode';
+import { actProgress, stage } from './timeline';
 import { partById } from './machine';
 import { moverAngle, moverOffset, partAngle, type PartMotion } from './motion';
 import { BACKGROUND, EDGE_THRESHOLD_DEG, INK, INK_DIM } from './theme';
@@ -90,7 +90,7 @@ export function Gear({ placement, project, motion }: Props) {
     clock.current += dt * rate;
     const t = clock.current;
 
-    if (slider.current) slider.current.position.x = partX(placement, explode.current);
+    if (slider.current) slider.current.position.x = partX(placement, actProgress(stage.current, 'explode'));
     if (spinner.current) spinner.current.rotation.z = partAngle(motion, t);
 
     for (let i = 0; i < pieces.movers.length; i++) {

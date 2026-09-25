@@ -3,14 +3,18 @@ import { parseSite, parseSkills } from './content';
 
 describe('parseSite', () => {
   it('parses required and optional fields', () => {
-    const site = parseSite('name: R\ntagline: T\ngithub: rv\nemail: a@b.c\nlinkedin: https://l\nresume: /r.pdf\n');
-    expect(site).toEqual({ name: 'R', tagline: 'T', github: 'rv', email: 'a@b.c', linkedin: 'https://l', resume: '/r.pdf' });
+    const site = parseSite('name: R\ntagline: T\nrole: Builder\ngithub: rv\nemail: a@b.c\nlinkedin: https://l\nresume: /r.pdf\n');
+    expect(site).toEqual({ name: 'R', tagline: 'T', role: 'Builder', github: 'rv', email: 'a@b.c', linkedin: 'https://l', resume: '/r.pdf' });
   });
 
   it('defaults optional fields to null', () => {
     const site = parseSite('name: R\ntagline: T\ngithub: rv\nemail: a@b.c\n');
     expect(site.linkedin).toBeNull();
     expect(site.resume).toBeNull();
+  });
+
+  it('falls back to the tagline when no role is given', () => {
+    expect(parseSite('name: R\ntagline: T\ngithub: rv\nemail: a@b.c\n').role).toBe('T');
   });
 
   it('throws when a required field is missing', () => {

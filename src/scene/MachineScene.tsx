@@ -7,7 +7,7 @@ import { useStore } from '../lib/store';
 import { ScrollCamera } from './ScrollCamera';
 import { Gear } from './Gear';
 import { CAMERA_PATH, cameraAt, posePosition } from './cameraPath';
-import { useExplodeOnScroll } from './explode';
+import { useScrollStage } from './timeline';
 import { assembledLength, machineDiameter, machineLength, motionById, placements } from './machine';
 import { BACKGROUND, INK_DIM } from './theme';
 
@@ -41,7 +41,7 @@ export function Machine() {
   const setSelected = useStore((s) => s.setSelected);
   const markInteracted = useStore((s) => s.markInteracted);
 
-  useExplodeOnScroll('.machine', markInteracted);
+  useScrollStage('.machine', markInteracted);
 
   useEffect(() => {
     const onVisibility = () => setFrameloop(document.hidden ? 'never' : 'always');
