@@ -26,7 +26,7 @@ export function HeroOverlay() {
       </div>
       <div className="hero__corner">
         <p className={`hero__hint${hasInteracted ? ' is-hidden' : ''}`} aria-hidden={hasInteracted}>
-          drag to orbit · click a gear
+          scroll to run the machine · click a part
         </p>
         <Scrubber />
         <p className="hero__stamp label">

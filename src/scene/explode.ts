@@ -21,12 +21,23 @@ export function scrollExplode(scrollY: number, heroHeight: number, viewportHeigh
   return clamp01(scrollY / runway);
 }
 
-/** Drives `explode` from the page's scroll position through the hero section. */
-export function useExplodeOnScroll(heroSelector: string): void {
+/** Progress past which the reader has clearly started scrolling. */
+const ENGAGED = 0.01;
+
+/**
+ * Drives `explode` from the page's scroll position through the hero section, and
+ * reports the first real scroll so the overlay can retire its hint.
+ */
+export function useExplodeOnScroll(heroSelector: string, onEngaged?: () => void): void {
   useEffect(() => {
+    let engaged = false;
     const update = () => {
       const hero = document.querySelector(heroSelector);
       explode.current = scrollExplode(window.scrollY, hero?.clientHeight ?? 0, window.innerHeight);
+      if (!engaged && explode.current > ENGAGED) {
+        engaged = true;
+        onEngaged?.();
+      }
     };
     update();
     window.addEventListener('scroll', update, { passive: true });
@@ -35,5 +46,5 @@ export function useExplodeOnScroll(heroSelector: string): void {
       window.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
     };
-  }, [heroSelector]);
+  }, [heroSelector, onEngaged]);
 }

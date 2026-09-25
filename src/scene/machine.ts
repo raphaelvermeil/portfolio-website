@@ -59,6 +59,9 @@ export const machineProjects: Project[] = paired.map((_, i) => projects[i]);
 export const assembledLength = layout.assembledLength;
 export const machineLength = layout.explodedLength;
 
+/** Widest part across the axis, used to frame the camera when near end-on. */
+export const machineDiameter = 2 * Math.max(...placements.map((p) => p.radius));
+
 /** How each part moves, taken from the assembly it was composed in. */
 export const motionById: Record<string, PartMotion> = Object.fromEntries(
   placements.map((p, i) => [p.id, paired[i].motion] as const),

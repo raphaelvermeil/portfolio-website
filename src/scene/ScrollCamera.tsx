@@ -1,0 +1,50 @@
+import { useFrame, useThree } from '@react-three/fiber';
+import { useMemo } from 'react';
+import { MathUtils, Vector3 } from 'three';
+import { CAMERA_PATH, cameraAt, framingDistance, posePosition } from './cameraPath';
+import { explode } from './explode';
+
+/** How quickly the camera catches up to the scroll position. */
+const SMOOTHING = 6;
+
+interface Props {
+  /** Axial extent closed up. */
+  assembledLength: number;
+  /** Axial extent pulled fully apart. */
+  explodedLength: number;
+  /** Widest part, across the axis. */
+  diameter: number;
+  /** Vertical field of view, in degrees; must match the canvas camera. */
+  fov: number;
+  /** Extra room left around the machine. */
+  margin: number;
+}
+
+/**
+ * The camera is the story: scroll position alone decides where it looks from.
+ *
+ * There is no orbit control — the pose comes from the shot list in cameraPath,
+ * and the distance is derived from how wide the machine actually reads from that
+ * angle, so it holds its size in frame whether it is closed up and broadside or
+ * spread out and near end-on. Positions are damped rather than set outright, so a
+ * jumpy scroll wheel still reads as a smooth move.
+ */
+export function ScrollCamera({ assembledLength, explodedLength, diameter, fov, margin }: Props) {
+  const aspect = useThree((s) => s.size.width / s.size.height);
+  const desired = useMemo(() => new Vector3(), []);
+
+  useFrame(({ camera }, dt) => {
+    const progress = explode.current;
+    const pose = cameraAt(CAMERA_PATH, progress);
+    const length = assembledLength + (explodedLength - assembledLength) * progress;
+    const [x, y, z] = posePosition(pose, framingDistance(pose, length, diameter, fov, aspect, margin));
+    desired.set(x, y, z);
+
+    camera.position.x = MathUtils.damp(camera.position.x, desired.x, SMOOTHING, dt);
+    camera.position.y = MathUtils.damp(camera.position.y, desired.y, SMOOTHING, dt);
+    camera.position.z = MathUtils.damp(camera.position.z, desired.z, SMOOTHING, dt);
+    camera.lookAt(0, 0, 0);
+  });
+
+  return null;
+}
