@@ -70,14 +70,14 @@ describe('fetchAll', () => {
     expect(projects.map((p) => p.id)).toEqual(['keep']);
   });
 
-  it('collects languages, readme excerpt (first 40 lines) and computes activity', async () => {
+  it('collects languages, the whole readme and computes activity', async () => {
     const longReadme = Array.from({ length: 60 }, (_, i) => `line ${i}`).join('\n');
     const deps = fakeDeps(
       routes([repo('a')], { a: { languages: { Java: 10, Python: 5 }, readme: { status: 200, body: { content: Buffer.from(longReadme).toString('base64'), encoding: 'base64' } } } }),
     );
     const { projects, languages } = await fetchAll(USER, {}, deps);
     expect(projects[0].languages).toEqual({ Java: 10, Python: 5 });
-    expect(projects[0].readmeExcerpt?.split('\n')).toHaveLength(40);
+    expect(projects[0].readme?.split('\n')).toHaveLength(60);
     expect(projects[0].activity).toBeGreaterThan(0);
     expect(languages).toEqual({ Java: 10, Python: 5 });
   });
@@ -85,7 +85,7 @@ describe('fetchAll', () => {
   it('treats a 404 README as null', async () => {
     const deps = fakeDeps(routes([repo('a')], { a: { readme: { status: 404 } } }));
     const { projects } = await fetchAll(USER, {}, deps);
-    expect(projects[0].readmeExcerpt).toBeNull();
+    expect(projects[0].readme).toBeNull();
   });
 
   it('applies overrides and sorts by activity descending', async () => {

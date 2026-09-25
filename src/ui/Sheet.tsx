@@ -7,7 +7,7 @@ interface Props {
   children: ReactNode;
 }
 
-const TOTAL = 4;
+const TOTAL = 5;
 
 export function Sheet({ id, title, number, children }: Props) {
   return (

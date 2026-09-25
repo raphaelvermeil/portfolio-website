@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react';
 import { meta } from '../lib/data';
 import { useStore } from '../lib/store';
 import { actProgress, useStageEffect } from '../scene/timeline';
-import { Legend } from './Legend';
+import { SkillsPanel } from './SkillsPanel';
 import { Scrubber } from './Scrubber';
 
 export function HeroOverlay() {
@@ -24,6 +24,7 @@ export function HeroOverlay() {
   return (
     <div className="hero">
       <nav className="hero__nav" aria-label="Sections">
+        <a href="#projects">Work</a>
         <a href="#about">About</a>
         <a href="#skills">Skills</a>
         <a href="#contact">Contact</a>
@@ -32,15 +33,15 @@ export function HeroOverlay() {
         </a>
       </nav>
       <div className="hero__chrome" ref={chrome}>
-        <div className="hero__legend">
-          <Legend />
+        <div className="hero__readout">
+          <SkillsPanel />
         </div>
         <div className="hero__corner">
           <p className={`hero__hint${hasInteracted ? ' is-hidden' : ''}`} aria-hidden={hasInteracted}>
             scroll to run the machine · click a part
           </p>
           <Scrubber />
-          <p className="hero__stamp label">Sheet 1/4 · Rev {rev}</p>
+          <p className="hero__stamp label">Sheet 1/5 · Rev {rev}</p>
         </div>
       </div>
     </div>

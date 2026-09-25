@@ -10,7 +10,8 @@ export interface Project {
   sizeKb: number;
   pushedAt: string;
   topics: string[];
-  readmeExcerpt: string | null;
+  /** Whole README, rendered on the project's own page. */
+  readme: string | null;
   featured: boolean;
   image: string | null;
   activity: number;

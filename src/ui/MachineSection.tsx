@@ -63,7 +63,7 @@ export function MachineSection() {
 
   useStageEffect('.machine', fade);
   return (
-    <section className="machine" id="projects" aria-label="Projects">
+    <section className="machine" id="machine" aria-label="The machine">
       <div className="machine__frame">
         <TitleCard />
         {webgl ? (

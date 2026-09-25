@@ -5,6 +5,8 @@ import { languageLabel } from '../lib/palette';
 import { withBase } from '../lib/paths';
 import { useStore } from '../lib/store';
 
+const EXCERPT_LINES = 40;
+
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function formatDate(iso: string): string {
@@ -16,7 +18,10 @@ export function DetailPanel() {
   const setSelected = useStore((s) => s.setSelected);
   const project = selected ? projectById[selected] : null;
   const panel = useRef<HTMLElement>(null);
-  const readme = useMemo(() => (project?.readmeExcerpt ? renderMarkdown(project.readmeExcerpt) : null), [project]);
+  const readme = useMemo(
+    () => (project?.readme ? renderMarkdown(project.readme.split('\n').slice(0, EXCERPT_LINES).join('\n')) : null),
+    [project],
+  );
 
   useEffect(() => {
     if (!project) return;

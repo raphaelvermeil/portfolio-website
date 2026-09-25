@@ -17,7 +17,7 @@ import { partX, type GearPlacement } from './axisLayout';
 import { actProgress, stage } from './timeline';
 import { partById } from './machine';
 import { moverAngle, moverOffset, partAngle, type PartMotion } from './motion';
-import { BACKGROUND, EDGE_THRESHOLD_DEG, INK, INK_DIM } from './theme';
+import { BACKGROUND, EDGE_THRESHOLD_DEG, INK } from './theme';
 
 /** Hovering runs a part's own mechanism faster rather than changing what it does. */
 const HOVER_RATE = 3;
@@ -66,7 +66,6 @@ export function Gear({ placement, project, motion }: Props) {
 
   const idleColor = useMemo(() => new Color(INK), []);
   const activeColor = useMemo(() => new Color(languageColor(project.language)), [project.language]);
-  const dimColor = useMemo(() => new Color(INK_DIM), []);
 
   const slider = useRef<Group>(null);
   const spinner = useRef<Group>(null);
@@ -77,16 +76,14 @@ export function Gear({ placement, project, motion }: Props) {
 
   const hovered = useStore((s) => s.hovered === id);
   const selected = useStore((s) => s.selected === id);
-  const filter = useStore((s) => s.filter);
   const setHovered = useStore((s) => s.setHovered);
   const setSelected = useStore((s) => s.setSelected);
   const reduced = useReducedMotion();
 
-  const dimmed = filter !== null && filter !== language;
-  useCursor(localHover && !dimmed);
+  useCursor(localHover);
 
   useFrame((_state, dt) => {
-    const rate = dimmed ? 0 : reduced ? REDUCED_RATE : hovered ? HOVER_RATE : selected ? SELECT_RATE : 1;
+    const rate = reduced ? REDUCED_RATE : hovered ? HOVER_RATE : selected ? SELECT_RATE : 1;
     clock.current += dt * rate;
     const t = clock.current;
 
@@ -101,13 +98,12 @@ export function Gear({ placement, project, motion }: Props) {
       group.position.z = moverOffset(m, t);
     }
 
-    stroke.color.copy(dimmed ? dimColor : hovered || selected ? activeColor : idleColor);
-    stroke.opacity = dimmed ? 0.4 : 0.9;
+    stroke.color.copy(hovered || selected ? activeColor : idleColor);
+    stroke.opacity = 0.9;
   });
 
   const onOver = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
-    if (dimmed) return;
     setLocalHover(true);
     setHovered(id);
   };
@@ -117,7 +113,6 @@ export function Gear({ placement, project, motion }: Props) {
   };
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
-    if (dimmed) return;
     setSelected(selected ? null : id);
   };
 
@@ -155,7 +150,7 @@ export function Gear({ placement, project, motion }: Props) {
         ))}
       </group>
 
-      {(hovered || selected) && !dimmed && (
+      {(hovered || selected) && (
         <Html
           position={[0, radius + 0.3, 0]}
           center

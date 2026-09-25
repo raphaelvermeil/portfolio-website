@@ -5,6 +5,7 @@ import { projectById } from '../lib/data';
 import { useMediaQuery } from '../lib/hooks';
 import { useStore } from '../lib/store';
 import { ScrollCamera } from './ScrollCamera';
+import { SkillCallouts } from './SkillCallouts';
 import { Gear } from './Gear';
 import { CAMERA_PATH, cameraAt, posePosition } from './cameraPath';
 import { useScrollStage } from './timeline';
@@ -67,6 +68,7 @@ export function Machine() {
         <Gear key={p.id} placement={p} project={projectById[p.id]} motion={motionById[p.id]} />
       ))}
 
+      <SkillCallouts />
       <ScrollCamera
         assembledLength={assembledLength}
         explodedLength={machineLength}

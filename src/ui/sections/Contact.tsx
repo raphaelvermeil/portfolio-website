@@ -11,7 +11,7 @@ export function Contact() {
   if (site.linkedin) rows.push({ label: 'LinkedIn', href: site.linkedin, text: site.linkedin.replace(/^https?:\/\//, '') });
   if (site.resume) rows.push({ label: 'Resume', href: withBase(site.resume), text: 'Download PDF' });
   return (
-    <Sheet id="contact" title="Contact" number={4}>
+    <Sheet id="contact" title="Contact" number={5}>
       <table className="panel__block contact">
         <tbody>
           {rows.map((r) => (

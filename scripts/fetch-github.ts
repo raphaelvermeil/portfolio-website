@@ -25,7 +25,6 @@ export const OUTPUT = {
 } as const;
 
 const API = 'https://api.github.com';
-const README_LINES = 40;
 const CONCURRENCY = 5;
 
 interface GitHubRepo {
@@ -60,8 +59,7 @@ async function getReadme(deps: FetchDeps, user: string, name: string): Promise<s
   if (res.status === 404) return null;
   if (res.status < 200 || res.status >= 300) throw new Error(`GitHub API ${res.status} for readme of ${name}`);
   const body = (await res.json()) as { content: string };
-  const text = Buffer.from(body.content, 'base64').toString('utf8');
-  return text.split('\n').slice(0, README_LINES).join('\n');
+  return Buffer.from(body.content, 'base64').toString('utf8');
 }
 
 async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
@@ -88,7 +86,7 @@ export async function fetchAll(user: string, overrides: OverrideMap, deps: Fetch
   deps.log(`fetched ${repos.length} repos, keeping ${kept.length}`);
 
   const projects = await mapLimit(kept, CONCURRENCY, async (r): Promise<Project> => {
-    const [languages, readmeExcerpt] = await Promise.all([
+    const [languages, readme] = await Promise.all([
       getJson<Record<string, number>>(deps, `${API}/repos/${user}/${r.name}/languages`),
       getReadme(deps, user, r.name),
     ]);
@@ -104,7 +102,7 @@ export async function fetchAll(user: string, overrides: OverrideMap, deps: Fetch
       sizeKb: r.size,
       pushedAt: r.pushed_at,
       topics: r.topics ?? [],
-      readmeExcerpt,
+      readme,
       featured: false,
       image: null,
       activity: Math.round(activityScore({ stars: r.stargazers_count, sizeKb: r.size, pushedAt: r.pushed_at }, now) * 1000) / 1000,

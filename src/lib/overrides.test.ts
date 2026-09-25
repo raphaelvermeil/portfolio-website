@@ -14,7 +14,7 @@ const base: Project = {
   sizeKb: 10,
   pushedAt: '2025-11-21T00:00:00Z',
   topics: [],
-  readmeExcerpt: null,
+  readme: null,
   featured: false,
   image: null,
   activity: 0.3,
