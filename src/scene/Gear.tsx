@@ -13,7 +13,7 @@ import { useReducedMotion } from '../lib/hooks';
 import { languageColor } from '../lib/palette';
 import { useStore } from '../lib/store';
 import type { Project } from '../lib/types';
-import { partX, type GearPlacement } from './axisLayout';
+import { axisOffset, type GearPlacement } from './axisLayout';
 import { SCATTER_DISTANCE, scatterById } from './skillParts';
 import { actProgress, explodeAmount, stage } from './timeline';
 import { partById } from './machine';
@@ -93,8 +93,8 @@ export function Gear({ placement, project, motion }: Props) {
       // Labelled parts leave the axis; everything else stays on it.
       const away = escape ? actProgress(stage.current, 'scatter') * SCATTER_DISTANCE : 0;
       slider.current.position.set(
-        partX(placement, explodeAmount(stage.current)),
         escape ? escape[0] * away : 0,
+        axisOffset(placement, explodeAmount(stage.current)),
         escape ? escape[1] * away : 0,
       );
     }

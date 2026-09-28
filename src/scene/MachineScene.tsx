@@ -24,8 +24,8 @@ function Spindle() {
   return (
     <Line
       points={[
-        [-half, 0, 0],
-        [half, 0, 0],
+        [0, -half, 0],
+        [0, half, 0],
       ]}
       color={INK_DIM}
       lineWidth={1}

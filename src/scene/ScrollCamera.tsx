@@ -38,9 +38,13 @@ export function ScrollCamera({ assembledLength, explodedLength, diameter, fov, m
     const progress = explodeAmount(stage.current);
     const pose = cameraAt(CAMERA_PATH, progress);
     const length = assembledLength + (explodedLength - assembledLength) * progress;
-    // The fan widens the machine across its axis, so the frame has to allow for it.
-    const spread = diameter + 2 * SCATTER_DISTANCE * actProgress(stage.current, 'scatter');
-    const [x, y, z] = posePosition(pose, framingDistance(pose, length, spread, fov, aspect, margin));
+    // The fan widens the machine around its middle; the frame has to allow for
+    // it without treating it as extra length.
+    const spread = SCATTER_DISTANCE * actProgress(stage.current, 'scatter') + diameter / 2;
+    const [x, y, z] = posePosition(
+      pose,
+      framingDistance(pose, length, diameter, fov, aspect, margin, spread),
+    );
     desired.set(x, y, z);
 
     camera.position.x = MathUtils.damp(camera.position.x, desired.x, SMOOTHING, dt);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { axisLayout, orderItems, partX, type AxisItem } from './axisLayout';
+import { axisLayout, orderItems, axisOffset, type AxisItem } from './axisLayout';
 
 const item = (id: string, language: string | null, radius = 1, depth = 0.4): AxisItem => ({
   id,
@@ -111,15 +111,15 @@ describe('axisLayout', () => {
   });
 });
 
-describe('partX', () => {
+describe('axisOffset', () => {
   const [a] = axisLayout([item('a', 'Java', 1, 0.4), item('b', 'Java', 1, 0.4)]).placements;
 
   it('returns the assembled position at 0 and the exploded one at 1', () => {
-    expect(partX(a, 0)).toBeCloseTo(a.assembled, 6);
-    expect(partX(a, 1)).toBeCloseTo(a.exploded, 6);
+    expect(axisOffset(a, 0)).toBeCloseTo(a.assembled, 6);
+    expect(axisOffset(a, 1)).toBeCloseTo(a.exploded, 6);
   });
 
   it('interpolates in between', () => {
-    expect(partX(a, 0.5)).toBeCloseTo((a.assembled + a.exploded) / 2, 6);
+    expect(axisOffset(a, 0.5)).toBeCloseTo((a.assembled + a.exploded) / 2, 6);
   });
 });

@@ -20,8 +20,8 @@ export interface GearPlacement {
   radius: number;
 }
 
-/** Where a part sits for a given explode factor, 0 (closed) to 1 (apart). */
-export function partX(placement: GearPlacement, explode: number): number {
+/** Where a part sits along the axis for a given explode factor, 0 (closed) to 1 (apart). */
+export function axisOffset(placement: GearPlacement, explode: number): number {
   return placement.assembled + (placement.exploded - placement.assembled) * explode;
 }
 
@@ -39,8 +39,16 @@ const GAP_MIN = 0.62;
 /** A hair of daylight between seated faces, so edges never z-fight. */
 const SEAT_CLEARANCE = 0.05;
 
-/** Parts lie along +X; their own spin axis (+Z) is rotated to match. */
-const AXIS = new Vector3(1, 0, 0);
+/**
+ * The machine stands upright: parts stack along +Y and their own spin axis (+Z)
+ * is turned to match.
+ *
+ * Standing it up is what keeps the column vertical on screen. A world-vertical
+ * line lies in the plane spanned by the camera's forward and up vectors, so
+ * with the camera's up left at world up it projects to a vertical screen line
+ * from any angle — no pose has to be tuned to achieve it.
+ */
+const AXIS = new Vector3(0, 1, 0);
 const PART_AXIS = new Vector3(0, 0, 1);
 
 /** Centre-to-centre distance with the parts pulled apart. */

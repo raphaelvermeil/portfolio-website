@@ -18,27 +18,22 @@ export interface CameraPose {
 /**
  * The shot list, in step with the acts in timeline.ts.
  *
- * It opens broadside and low, holds that while the machine comes apart along its
- * axis, then swings round in one move to look down the axis itself — arriving
- * just as the labelled parts step off it, and staying there while they fan out.
+ * The machine stands upright, so the column is vertical on screen throughout and
+ * elevation alone decides how much we look down it.
  *
- * Down the axis, not down from above: the parts are discs standing on a
- * horizontal axis, so an overhead camera sees them edge-on, which reads as
- * another side view. End-on is the angle that shows their faces and lets the
- * fan spread in every direction at once.
- *
- * Elevation stays low once the swing is done. It is elevation, not azimuth,
- * that tilts the axis back across the frame: lift the camera while end-on and
- * the column stretches out diagonally and stops reading as a column at all.
- * Neither angle ever runs backwards.
+ * It opens low, almost level with the stack, and holds there while the machine
+ * comes apart. Then the camera rises in one move to look down into it, arriving
+ * just as the labelled parts step off the axis, and stays there while they fan
+ * out around the column. Azimuth only drifts, to keep the parts from lining up
+ * flat. Neither angle ever runs backwards.
  */
 export const CAMERA_PATH: CameraKey[] = [
-  { at: 0, azimuth: -28, elevation: 8, distance: 1 },
-  { at: 0.2, azimuth: -10, elevation: 12, distance: 1.03 },
-  { at: 0.44, azimuth: 16, elevation: 18, distance: 1.05 },
-  { at: 0.62, azimuth: 74, elevation: 22, distance: 1.02 },
-  { at: 0.8, azimuth: 81, elevation: 22, distance: 1 },
-  { at: 1, azimuth: 84, elevation: 22, distance: 1 },
+  { at: 0, azimuth: -22, elevation: 6, distance: 1 },
+  { at: 0.2, azimuth: -10, elevation: 10, distance: 1.02 },
+  { at: 0.44, azimuth: 6, elevation: 16, distance: 1.04 },
+  { at: 0.62, azimuth: 26, elevation: 56, distance: 1 },
+  { at: 0.8, azimuth: 36, elevation: 62, distance: 1 },
+  { at: 1, azimuth: 42, elevation: 64, distance: 1 },
 ];
 
 /** Eases the joins so the camera arrives and leaves each pose gently. */
@@ -87,29 +82,30 @@ export function framingDistance(
   fovDegrees: number,
   aspect: number,
   margin = 1.12,
+  /** Radius of the fanned-out parts, which sit around the column's middle. */
+  spread = 0,
 ): number {
-  const az = rad(pose.azimuth);
+  // The machine stands on the world's vertical, so its length lands entirely on
+  // the screen's vertical, foreshortened by how far the camera has risen. Its
+  // girth is all that governs the width, whatever the azimuth.
   const el = rad(pose.elevation);
-
-  // Unit vector from the machine towards the camera.
-  const dx = Math.cos(el) * Math.sin(az);
-  const dy = Math.sin(el);
-  const dz = Math.cos(el) * Math.cos(az);
-
-  // Screen axes: right is perpendicular to the view and to world up.
-  const horizontal = Math.hypot(dx, dz) || 1e-6;
-  const axisOnRight = dz / horizontal;
-  const axisOnUp = (-dy * dx) / horizontal;
-
-  const half = length / 2;
   const radius = diameter / 2;
-  const halfWidth = Math.abs(half * axisOnRight) + radius;
-  const halfHeight = Math.abs(half * axisOnUp) + radius;
+  const cos = Math.abs(Math.cos(el));
+  const sin = Math.abs(Math.sin(el));
+
+  // The column's ends and the fan are not stacked: the fanned parts sit around
+  // the middle, so whichever reaches higher on screen governs, not their sum.
+  const halfHeight = Math.max((length / 2) * cos, spread * sin) + radius;
+  const halfWidth = Math.max(spread, radius);
 
   const tanHalfV = Math.tan(rad(fovDegrees) / 2);
   const tanHalfH = tanHalfV * aspect;
 
-  return Math.max(halfWidth / tanHalfH, halfHeight / tanHalfV) * margin * pose.distance;
+  // Once the camera rises, the near end of the column is much closer than the
+  // centre and magnifies accordingly. Fit against that, or the top overflows.
+  const near = (length / 2) * sin + radius;
+
+  return (Math.max(halfWidth / tanHalfH, halfHeight / tanHalfV) + near) * margin * pose.distance;
 }
 
 /** Converts a pose and a distance into a camera position. */

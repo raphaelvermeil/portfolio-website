@@ -8,7 +8,7 @@ export interface SkillPart {
   language: string;
   color: string;
   share: number;
-  /** Unit direction to pull away from the axis, in the plane across it (y, z). */
+  /** Unit direction to pull away from the upright axis, in the horizontal plane (x, z). */
   direction: [number, number];
 }
 
@@ -26,9 +26,9 @@ const MAX_PARTS = 5;
  * Pins the top skills to parts along the assembly.
  *
  * The parts are spread down the machine so their leaders never bunch, and their
- * escape directions are fanned evenly around the axis. This is read from close
- * to end-on, where the plane across the axis faces the camera, so every
- * direction in that plane separates visibly.
+ * escape directions are fanned evenly around the axis. The machine stands
+ * upright and is read from above, so that plane faces the camera and every
+ * direction in it separates visibly.
  */
 export function planSkillParts(
   items: GearPlacement[],

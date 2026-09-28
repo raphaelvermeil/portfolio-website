@@ -1,3 +1,4 @@
+import { PerspectiveCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { CAMERA_PATH, cameraAt, framingDistance, posePosition, type CameraKey } from './cameraPath';
 import { ACTS } from './timeline';
@@ -75,36 +76,42 @@ describe('CAMERA_PATH', () => {
     expect(CAMERA_PATH[0].elevation).toBeLessThan(15);
   });
 
-  it('finishes looking down the axis, short of dead end-on', () => {
+  it('finishes looking down into the stack, short of straight overhead', () => {
     const last = CAMERA_PATH[CAMERA_PATH.length - 1];
-    expect(last.azimuth).toBeGreaterThan(70);
-    // At 90 the assembly collapses to a single disc and the framing maths
-    // loses the horizontal it projects onto.
-    expect(last.azimuth).toBeLessThan(88);
+    expect(last.elevation).toBeGreaterThan(45);
+    // At 90 the column foreshortens to a point and the camera's up vector
+    // lines up with the axis it is trying to look along.
+    expect(last.elevation).toBeLessThan(80);
   });
 
-  it('is already looking down the axis when the parts step off it', () => {
-    expect(cameraAt(CAMERA_PATH, ACTS.scatter[0]).azimuth).toBeGreaterThan(60);
+  it('is already looking down into the stack when the parts step off it', () => {
+    expect(cameraAt(CAMERA_PATH, ACTS.scatter[0]).elevation).toBeGreaterThan(45);
   });
 
-  it('holds that view for the whole separation, never turning back broadside', () => {
+  it('holds that view for the whole separation, never dropping back level', () => {
     for (let p = ACTS.scatter[0]; p <= ACTS.scatter[1]; p += 0.02) {
-      expect(cameraAt(CAMERA_PATH, p).azimuth).toBeGreaterThan(60);
+      expect(cameraAt(CAMERA_PATH, p).elevation).toBeGreaterThan(45);
     }
   });
 
-  it('keeps the axis compressed while end-on, so it reads as a column', () => {
-    // How much of the machine's length lands on the screen's vertical axis.
-    const acrossScreen = (pose: { azimuth: number; elevation: number }) => {
-      const az = (pose.azimuth * Math.PI) / 180;
-      const el = (pose.elevation * Math.PI) / 180;
-      const dx = Math.cos(el) * Math.sin(az);
-      const dy = Math.sin(el);
-      const dz = Math.cos(el) * Math.cos(az);
-      return Math.abs((-dy * dx) / Math.hypot(dx, dz));
-    };
-    for (let p = ACTS.scatter[0]; p <= 1; p += 0.02) {
-      expect(acrossScreen(cameraAt(CAMERA_PATH, p))).toBeLessThan(0.42);
+  it('leaves the column standing vertical on screen at every pose', () => {
+    // Projected through a real camera: two points on the machine's upright axis
+    // must land on the same screen x, or the column leans.
+    const camera = new PerspectiveCamera(22, 1.6, 0.1, 500);
+    const top = new Vector3();
+    const bottom = new Vector3();
+
+    for (let p = 0; p <= 1; p += 0.02) {
+      const pose = cameraAt(CAMERA_PATH, p);
+      camera.position.set(...posePosition(pose, 30));
+      camera.lookAt(0, 0, 0);
+      camera.updateMatrixWorld(true);
+
+      top.set(0, 6, 0).project(camera);
+      bottom.set(0, -6, 0).project(camera);
+
+      expect(top.x).toBeCloseTo(bottom.x, 6);
+      expect(top.y).toBeGreaterThan(bottom.y);
     }
   });
 });
@@ -141,20 +148,36 @@ describe('framingDistance', () => {
   const pose = (azimuth: number, elevation = 0, distance = 1) => ({ azimuth, elevation, distance });
   const fit = (p: ReturnType<typeof pose>) => framingDistance(p, LENGTH, DIAMETER, FOV, ASPECT, 1);
 
-  /** Half-extents of the machine on screen at a given distance, from the same geometry. */
-  function onScreen(p: ReturnType<typeof pose>, distance: number) {
-    const [x, y, z] = posePosition(p, distance);
-    const horizontal = Math.hypot(x, z);
-    const halfW = Math.abs((LENGTH / 2) * (z / horizontal)) + DIAMETER / 2;
-    const halfH = Math.abs((LENGTH / 2) * ((-y * x) / (horizontal * distance))) + DIAMETER / 2;
+  /**
+   * Half-extents of the upright machine on screen, as fractions of the frame,
+   * measured at the closest the geometry comes to the camera — which is what
+   * actually decides whether it overflows.
+   */
+  function onScreen(p: ReturnType<typeof pose>, distance: number, spread = 0) {
+    const el = (p.elevation * Math.PI) / 180;
     const tanV = Math.tan((FOV * Math.PI) / 180 / 2);
-    return { widthRatio: halfW / (distance * tanV * ASPECT), heightRatio: halfH / (distance * tanV) };
+    const halfH =
+      Math.max((LENGTH / 2) * Math.abs(Math.cos(el)), spread * Math.abs(Math.sin(el))) + DIAMETER / 2;
+    const halfW = Math.max(spread, DIAMETER / 2);
+    const near = distance - ((LENGTH / 2) * Math.abs(Math.sin(el)) + DIAMETER / 2);
+    return {
+      widthRatio: halfW / (near * tanV * ASPECT),
+      heightRatio: halfH / (near * tanV),
+    };
   }
 
-  it('fits the machine exactly at margin 1, broadside', () => {
+  it('fits the machine exactly at margin 1, level with the stack', () => {
     const p = pose(0);
     const { widthRatio, heightRatio } = onScreen(p, fit(p));
     expect(Math.max(widthRatio, heightRatio)).toBeCloseTo(1, 6);
+  });
+
+  it('stands further back than foreshortening alone would suggest', () => {
+    // Fitting only the flattened height would let the camera creep in until the
+    // near end of the tilted column magnified past the top of the frame.
+    const el = (60 * Math.PI) / 180;
+    const flattened = ((LENGTH / 2) * Math.cos(el) + DIAMETER / 2) / Math.tan((FOV * Math.PI) / 360);
+    expect(fit(pose(0, 60))).toBeGreaterThan(flattened);
   });
 
   it('keeps the machine inside the frame at every pose on the path', () => {
@@ -166,16 +189,29 @@ describe('framingDistance', () => {
     }
   });
 
-  it('comes closer as the machine turns towards end-on', () => {
-    expect(fit(pose(60))).toBeLessThan(fit(pose(0)));
+  it('keeps the fanned-out parts in frame too', () => {
+    const SPREAD = 4.1;
+    for (let t = 0; t <= 1; t += 0.02) {
+      const p = cameraAt(CAMERA_PATH, t);
+      const d = framingDistance(p, LENGTH, DIAMETER, FOV, ASPECT, 1.12, SPREAD);
+      const { widthRatio, heightRatio } = onScreen(p, d, SPREAD);
+      expect(Math.max(widthRatio, heightRatio)).toBeLessThanOrEqual(1);
+    }
   });
 
-  it('stands further back when the tilt pushes it into the short axis', () => {
-    expect(fit(pose(45, 30))).toBeGreaterThan(fit(pose(45, 0)));
+  it('does not treat the fan as extra length', () => {
+    // A fan around the middle must cost less than the same reach added to the ends.
+    const withFan = framingDistance(pose(0, 60), LENGTH, DIAMETER, FOV, ASPECT, 1, 4);
+    const asLength = framingDistance(pose(0, 60), LENGTH + 8, DIAMETER, FOV, ASPECT, 1);
+    expect(withFan).toBeLessThan(asLength);
   });
 
-  it('never collapses onto the machine when seen straight down the axis', () => {
-    expect(fit(pose(90))).toBeGreaterThan(DIAMETER / 2);
+  it('ignores azimuth, since an upright column is the same width all round', () => {
+    expect(fit(pose(70, 20))).toBeCloseTo(fit(pose(-15, 20)), 9);
+  });
+
+  it('never collapses onto the machine when looking straight down it', () => {
+    expect(fit(pose(0, 90))).toBeGreaterThan(DIAMETER / 2);
   });
 
   it('scales with the pose distance multiplier and the margin', () => {

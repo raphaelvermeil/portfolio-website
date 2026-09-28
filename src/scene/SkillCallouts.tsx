@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
 import type { Group } from 'three';
 import { percent } from '../lib/skills';
-import { partX } from './axisLayout';
+import { axisOffset } from './axisLayout';
 import { placementById } from './machine';
 import { SCATTER_DISTANCE, SKILL_PARTS, type SkillPart } from './skillParts';
 import { actProgress, explodeAmount, stage } from './timeline';
@@ -23,8 +23,8 @@ function CalloutMarker({ part }: { part: SkillPart }) {
 
     if (group.current) {
       group.current.position.set(
-        partX(placement, explodeAmount(stage.current)),
         part.direction[0] * away,
+        axisOffset(placement, explodeAmount(stage.current)),
         part.direction[1] * away,
       );
     }
@@ -37,7 +37,7 @@ function CalloutMarker({ part }: { part: SkillPart }) {
   return (
     <group ref={group}>
       <Html
-        position={[0, placement.radius + 0.5, 0]}
+        position={[part.direction[0] * (placement.radius + 0.7), 0, part.direction[1] * (placement.radius + 0.7)]}
         center
         zIndexRange={[6, 0]}
         style={{ pointerEvents: 'none' }}
