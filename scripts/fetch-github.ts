@@ -4,7 +4,7 @@ import { dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { activityScore } from '../src/lib/activity';
 import { parseSite } from '../src/lib/content';
-import { applyOverride, isHidden, parseOverrides, type OverrideMap } from '../src/lib/overrides';
+import { parseOverrides } from '../src/lib/overrides';
 import type { Meta, Project } from '../src/lib/types';
 
 export type Fetcher = (url: string) => Promise<{ status: number; json: () => Promise<unknown> }>;
@@ -75,14 +75,16 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
   return results;
 }
 
-export async function fetchAll(user: string, overrides: OverrideMap, deps: FetchDeps) {
+export async function fetchAll(user: string, deps: FetchDeps) {
   const now = deps.now();
   const [profile, repos] = await Promise.all([
     getJson<GitHubUser>(deps, `${API}/users/${user}`),
     getJson<GitHubRepo[]>(deps, `${API}/users/${user}/repos?per_page=100&type=owner`),
   ]);
 
-  const kept = repos.filter((r) => !r.fork && !r.archived && !isHidden(r.name, overrides));
+  // Only structural exclusions here. Which repos are shown, and how they read,
+  // is decided from content/projects.yml when the app loads.
+  const kept = repos.filter((r) => !r.fork && !r.archived);
   deps.log(`fetched ${repos.length} repos, keeping ${kept.length}`);
 
   const projects = await mapLimit(kept, CONCURRENCY, async (r): Promise<Project> => {
@@ -107,7 +109,7 @@ export async function fetchAll(user: string, overrides: OverrideMap, deps: Fetch
       image: null,
       activity: Math.round(activityScore({ stars: r.stargazers_count, sizeKb: r.size, pushedAt: r.pushed_at }, now) * 1000) / 1000,
     };
-    return applyOverride(base, overrides[r.name]);
+    return base;
   });
 
   projects.sort((a, b) => b.activity - a.activity || a.id.localeCompare(b.id));
@@ -130,9 +132,10 @@ export async function fetchAll(user: string, overrides: OverrideMap, deps: Fetch
 
 export async function run(deps: FetchDeps): Promise<number> {
   const site = parseSite(await deps.readText('content/site.yml'));
-  const overrides = parseOverrides(await deps.readText('content/projects.yml'));
+  // Parsed only to fail the build early on a malformed file; the app applies it.
+  parseOverrides(await deps.readText('content/projects.yml'));
   try {
-    const { projects, languages, meta } = await fetchAll(site.github, overrides, deps);
+    const { projects, languages, meta } = await fetchAll(site.github, deps);
     await deps.writeText(OUTPUT.projects, JSON.stringify(projects, null, 2) + '\n');
     await deps.writeText(OUTPUT.languages, JSON.stringify(languages, null, 2) + '\n');
     await deps.writeText(OUTPUT.meta, JSON.stringify(meta, null, 2) + '\n');

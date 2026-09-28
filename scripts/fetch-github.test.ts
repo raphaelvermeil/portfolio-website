@@ -64,10 +64,15 @@ function fakeDeps(table: Record<string, { status: number; body: unknown }>, file
 }
 
 describe('fetchAll', () => {
-  it('drops forks, archived and hidden repos', async () => {
-    const deps = fakeDeps(routes([repo('keep'), repo('fork', { fork: true }), repo('old', { archived: true }), repo('hid')], { keep: {} }));
-    const { projects } = await fetchAll(USER, { hid: { hidden: true } }, deps);
-    expect(projects.map((p) => p.id)).toEqual(['keep']);
+  it('drops forks and archived repos, and keeps the rest for the app to filter', async () => {
+    const deps = fakeDeps(
+      routes([repo('keep'), repo('fork', { fork: true }), repo('old', { archived: true }), repo('hid')], {
+        keep: {},
+        hid: {},
+      }),
+    );
+    const { projects } = await fetchAll(USER, deps);
+    expect(projects.map((p) => p.id).sort()).toEqual(['hid', 'keep']);
   });
 
   it('collects languages, the whole readme and computes activity', async () => {
@@ -75,7 +80,7 @@ describe('fetchAll', () => {
     const deps = fakeDeps(
       routes([repo('a')], { a: { languages: { Java: 10, Python: 5 }, readme: { status: 200, body: { content: Buffer.from(longReadme).toString('base64'), encoding: 'base64' } } } }),
     );
-    const { projects, languages } = await fetchAll(USER, {}, deps);
+    const { projects, languages } = await fetchAll(USER, deps);
     expect(projects[0].languages).toEqual({ Java: 10, Python: 5 });
     expect(projects[0].readme?.split('\n')).toHaveLength(60);
     expect(projects[0].activity).toBeGreaterThan(0);
@@ -84,27 +89,28 @@ describe('fetchAll', () => {
 
   it('treats a 404 README as null', async () => {
     const deps = fakeDeps(routes([repo('a')], { a: { readme: { status: 404 } } }));
-    const { projects } = await fetchAll(USER, {}, deps);
+    const { projects } = await fetchAll(USER, deps);
     expect(projects[0].readme).toBeNull();
   });
 
-  it('applies overrides and sorts by activity descending', async () => {
+  it('sorts by activity descending and leaves presentation alone', async () => {
     const deps = fakeDeps(routes([repo('old', { pushed_at: '2024-01-01T00:00:00Z' }), repo('new')], { old: {}, new: {} }));
-    const { projects } = await fetchAll(USER, { old: { title: 'Old One', featured: true } }, deps);
+    const { projects } = await fetchAll(USER, deps);
     expect(projects.map((p) => p.id)).toEqual(['new', 'old']);
-    expect(projects[1]).toMatchObject({ title: 'Old One', featured: true });
+    // Titles and blurbs come from the override file at load time, not from here.
+    expect(projects[1]).toMatchObject({ title: 'old', featured: false });
   });
 
   it('fills meta from the user profile', async () => {
     const deps = fakeDeps(routes([], {}));
-    const { meta } = await fetchAll(USER, {}, deps);
+    const { meta } = await fetchAll(USER, deps);
     expect(meta).toEqual({ fetchedAt: '2026-09-21T00:00:00.000Z', avatarUrl: 'https://a/x.png', profileUrl: `https://github.com/${USER}`, name: 'R V', bio: null });
   });
 
   it('throws on a non-404 error status', async () => {
     const table = routes([repo('a')], { a: {} });
     table[`${API}/repos/${USER}/a/languages`] = { status: 403, body: { message: 'rate limited' } };
-    await expect(fetchAll(USER, {}, fakeDeps(table))).rejects.toThrow(/403/);
+    await expect(fetchAll(USER, fakeDeps(table))).rejects.toThrow(/403/);
   });
 });
 

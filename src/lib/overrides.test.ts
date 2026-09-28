@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Project } from './types';
-import { applyOverride, isHidden, parseOverrides } from './overrides';
+import { applyOverride, applyOverrides, isHidden, parseOverrides } from './overrides';
 
 const base: Project = {
   id: 'pathfinding',
@@ -77,5 +77,42 @@ describe('applyOverride', () => {
     expect(out.blurb).toBe('from github');
     expect(out.homepage).toBe('https://gh.example');
     expect(out.featured).toBe(false);
+  });
+});
+
+describe('applyOverrides', () => {
+  const projects: Project[] = [
+    { ...base, id: 'alpha' },
+    { ...base, id: 'beta' },
+    { ...base, id: 'gamma' },
+  ];
+
+  it('drops hidden repos and keeps the order of the rest', () => {
+    const out = applyOverrides(projects, { beta: { hidden: true } });
+    expect(out.map((p) => p.id)).toEqual(['alpha', 'gamma']);
+  });
+
+  it('rewrites the ones it names and leaves the others alone', () => {
+    const out = applyOverrides(projects, { alpha: { title: 'Alpha!', blurb: 'First' } });
+    expect(out[0]).toMatchObject({ id: 'alpha', title: 'Alpha!', blurb: 'First' });
+    expect(out[1]).toEqual(projects[1]);
+  });
+
+  it('passes everything through when there are no overrides', () => {
+    expect(applyOverrides(projects, {})).toEqual(projects);
+  });
+
+  it('ignores names that match no repo', () => {
+    expect(applyOverrides(projects, { nothere: { hidden: true } }).map((p) => p.id)).toEqual([
+      'alpha',
+      'beta',
+      'gamma',
+    ]);
+  });
+
+  it('does not mutate what it is given', () => {
+    const snapshot = JSON.parse(JSON.stringify(projects));
+    applyOverrides(projects, { alpha: { title: 'Changed' } });
+    expect(projects).toEqual(snapshot);
   });
 });

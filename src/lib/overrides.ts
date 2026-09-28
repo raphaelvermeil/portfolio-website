@@ -33,6 +33,20 @@ export function isHidden(name: string, overrides: OverrideMap): boolean {
   return overrides[name]?.hidden === true;
 }
 
+/**
+ * Applies the whole override file to fetched repositories: drops the hidden
+ * ones and rewrites the rest.
+ *
+ * This runs when the app loads, not when the data is fetched, so editing
+ * content/projects.yml takes effect immediately — a blurb should not need a
+ * network round trip to appear.
+ */
+export function applyOverrides(projects: Project[], overrides: OverrideMap): Project[] {
+  return projects
+    .filter((project) => !isHidden(project.id, overrides))
+    .map((project) => applyOverride(project, overrides[project.id]));
+}
+
 export function applyOverride(project: Project, override: ProjectOverride | undefined): Project {
   if (!override) return project;
   return {

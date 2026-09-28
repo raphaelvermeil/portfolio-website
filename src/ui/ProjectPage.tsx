@@ -81,7 +81,7 @@ export function ProjectPage({ id }: { id: string }) {
         )}
       </div>
 
-      {project.image && <img className="article__image" src={withBase(project.image)} alt="" />}
+      {project.image && <img className="article__image" src={withBase(project.image)} alt="" loading="lazy" />}
 
       {body ? (
         <div className="article__body" dangerouslySetInnerHTML={{ __html: body }} />

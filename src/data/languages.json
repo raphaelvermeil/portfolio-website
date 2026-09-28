@@ -1,11 +1,13 @@
 {
-  "TypeScript": 745222,
-  "Go": 262419,
-  "HTML": 130302,
-  "CSS": 28238,
+  "TypeScript": 823624,
+  "Go": 346777,
+  "HTML": 133341,
+  "CSS": 31231,
   "JavaScript": 98209,
   "Dockerfile": 1786,
-  "Java": 236880,
+  "Java": 243027,
   "Jupyter Notebook": 1450843,
-  "Python": 146562
+  "Python": 146562,
+  "Ruby": 7220,
+  "Shell": 2193
 }

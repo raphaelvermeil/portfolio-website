@@ -1,12 +1,122 @@
 # Per-repo overrides, keyed by repository name.
-# Fields: title, blurb, hidden, featured, image (path under public/), homepage.
+# Fields: title, blurb, hidden, featured, image (path under public/, or a URL).
 
 ECSEGAMES:
   title: ECSE Games
+  blurb: >-
+    The site that runs the ECSESS Games: students sign up with a McGill email, join one of
+    three program teams, and earn points across timed events and puzzles. Go API, React front end.
   featured: true
 
-github-slideshow:
+BridgeOrBust:
+  title: Bridge or Bust
+  blurb: >-
+    A bridge-building puzzle game in JavaFX, on a physics engine written from scratch. Beams
+    sag under load, glow red in tension and blue in compression, and snap if you misplace one.
+  image: https://raw.githubusercontent.com/raphaelvermeil/BridgeOrBust/HEAD/GBOB2.gif
+
+neural-critters:
+  title: Neural Critters
+  blurb: >-
+    Sketch a creature out of segments and joints, then watch an evolutionary algorithm teach it
+    to swim. Dependency-free spring-mass physics, and two kinds of brain you can watch think.
+
+NeuralNetwork:
+  title: Neural Network
+  blurb: >-
+    A feed-forward network in pure NumPy — forward prop, back prop and gradient descent all
+    written out by hand. Layer count and sizes are constants, so it fits any classification job.
+
+quicklink:
+  title: QuickLink
+  blurb: >-
+    A URL shortener in Spring Boot. Base62 short codes, and click counts held in memory and
+    flushed to the database in the background rather than written on every hit.
+
+mern-chat-app:
+  title: MERN Chat
+  blurb: >-
+    Real-time chat on Express, MongoDB and Socket.IO, with JWT auth in an httpOnly cookie,
+    online presence, and image messages uploaded through Cloudinary.
+
+gen-z-translator:
+  title: Gen Z Translator
+  blurb: >-
+    A messaging app that rewrites what you send between Gen Z and Boomer registers as it goes,
+    using the OpenAI API. Next.js on Supabase.
+
+GearMeUp:
+  title: GearMeUp
+  blurb: >-
+    A marketplace for renting outdoor gear from people nearby — listings by category and price,
+    date-based rental requests, and reviews on both sides. Next.js and Tailwind.
+
+enggames-partners:
+  title: Eng Games Partners
+  blurb: >-
+    A sponsorship tracker for the Engineering Games: companies, contacts and outreach campaigns
+    behind a login. Next.js.
+
+ecse-211-robot:
+  title: ECSE 211 Robot
+  blurb: >-
+    Control code for the ECSE 211 design-course robot — navigation, turning to bearing, sensor
+    sweeps and the mission sequence that strings them together.
+
+pathfinding:
+  title: Pathfinding
+  blurb: >-
+    A maze solver in Java with a Swing panel that draws the search as it spreads out from the
+    start and settles on a route.
+
+pathfinding2:
+  title: Pathfinding II
+  blurb: >-
+    The maze solver rebuilt around a binary heap and explicit search nodes, so the frontier is
+    a real priority queue rather than a scan.
+
+caterpiller:
+  title: Caterpillar
+  blurb: >-
+    A caterpillar game in Java that grows through evolution stages as it eats its way through
+    cake, fruit and ice cream, moving on a stack written by hand.
+
+McWicsHackathon:
+  title: Cell vs Bacteria
+  blurb: >-
+    A pygame arcade game built over a weekend at the McWiCS hackathon: play a cell fending off
+    bacteria for score, on hand-drawn pixel art.
+
+fakeCodePolisher:
+  title: Charmify
+  blurb: >-
+    A VS Code extension with one command, Make Worse. It is a legacy-code generator — it takes
+    code you are happy with and returns something you are not.
+
+treasurehunt:
+  title: Treasure Hunt
+  blurb: >-
+    A mobile-first riddle hunt. Groups solve a clue, find the location on the map, and unlock
+    the next one.
+
+learn-shaders:
+  title: Learn Shaders
+  blurb: >-
+    A single self-contained page working through GLSL from first principles, written while
+    learning them.
+
+pandas-marketingdata-prep:
+  title: Marketing Data Prep
+  blurb: >-
+    A pandas notebook cleaning and reshaping raw marketing analytics into something that can
+    actually be analysed.
+
+# Not project work: an empty repo, a practice log, and a GitHub tutorial repo.
+gearmeup-native:
   hidden: true
 
 neetcode-submissions:
+  hidden: true
+
+github-slideshow:
   hidden: true
