@@ -54,12 +54,14 @@ export function scrollStage(scrollY: number, heroHeight: number, viewportHeight:
 }
 
 /**
- * How far the stack has drawn back together by the end of the scatter. The fan
- * needs room across the axis, and a machine that stayed fully spread along it
- * as well would be mostly empty air, framing small. Pulling the axis back in as
- * the labelled parts step out keeps the composition tight.
+ * How far the stack has drawn back together by the end of the scatter.
+ *
+ * Seen end-on the machine should read as one compact column with a few parts
+ * pulled clear of it. Left spread along its axis as well as across it, there is
+ * no column left to pull away from — just a field of parts — and the camera,
+ * which has to frame all of it, pushes the whole thing small.
  */
-const RECOMPACT = 0.55;
+const RECOMPACT = 0.82;
 
 /** Axial spread: opens through the explode, then eases back during the scatter. */
 export function explodeAmount(master: number): number {

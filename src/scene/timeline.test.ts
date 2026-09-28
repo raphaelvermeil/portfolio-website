@@ -91,11 +91,11 @@ describe('explodeAmount', () => {
     expect(explodeAmount(ACTS.explode[1])).toBeCloseTo(1, 6);
   });
 
-  it('draws back in as the parts fan out, without closing up entirely', () => {
+  it('draws back into a column as the parts fan out, without closing up entirely', () => {
     const open = explodeAmount(ACTS.scatter[0]);
     const end = explodeAmount(1);
-    expect(end).toBeLessThan(open);
-    expect(end).toBeGreaterThan(0.3);
+    expect(end).toBeLessThan(open / 2);
+    expect(end).toBeGreaterThan(0.1);
   });
 
   it('never leaves 0..1, and never runs backwards during the explode', () => {

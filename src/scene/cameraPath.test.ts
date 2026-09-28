@@ -63,26 +63,48 @@ describe('CAMERA_PATH', () => {
     for (const a of azimuths) expect(Math.abs(a)).toBeLessThan(90);
   });
 
-  it('climbs without ever dropping back down', () => {
+  it('swings and rises without ever running backwards', () => {
+    const azimuths = CAMERA_PATH.map((k) => k.azimuth);
     const elevations = CAMERA_PATH.map((k) => k.elevation);
+    expect(azimuths).toEqual([...azimuths].sort((a, b) => a - b));
     expect(elevations).toEqual([...elevations].sort((a, b) => a - b));
-    expect(elevations[0]).toBeLessThan(15);
   });
 
-  it('finishes looking down on the machine, short of straight overhead', () => {
+  it('starts broadside and low', () => {
+    expect(Math.abs(CAMERA_PATH[0].azimuth)).toBeLessThan(45);
+    expect(CAMERA_PATH[0].elevation).toBeLessThan(15);
+  });
+
+  it('finishes looking down the axis, short of dead end-on', () => {
     const last = CAMERA_PATH[CAMERA_PATH.length - 1];
-    expect(last.elevation).toBeGreaterThan(45);
-    // At 90 the framing maths loses the horizontal it projects onto.
-    expect(last.elevation).toBeLessThan(80);
+    expect(last.azimuth).toBeGreaterThan(70);
+    // At 90 the assembly collapses to a single disc and the framing maths
+    // loses the horizontal it projects onto.
+    expect(last.azimuth).toBeLessThan(88);
   });
 
-  it('is already overhead by the time the parts step off the axis', () => {
-    expect(cameraAt(CAMERA_PATH, ACTS.scatter[0]).elevation).toBeGreaterThan(45);
+  it('is already looking down the axis when the parts step off it', () => {
+    expect(cameraAt(CAMERA_PATH, ACTS.scatter[0]).azimuth).toBeGreaterThan(60);
   });
 
-  it('holds that view for the whole separation', () => {
+  it('holds that view for the whole separation, never turning back broadside', () => {
     for (let p = ACTS.scatter[0]; p <= ACTS.scatter[1]; p += 0.02) {
-      expect(cameraAt(CAMERA_PATH, p).elevation).toBeGreaterThan(45);
+      expect(cameraAt(CAMERA_PATH, p).azimuth).toBeGreaterThan(60);
+    }
+  });
+
+  it('keeps the axis compressed while end-on, so it reads as a column', () => {
+    // How much of the machine's length lands on the screen's vertical axis.
+    const acrossScreen = (pose: { azimuth: number; elevation: number }) => {
+      const az = (pose.azimuth * Math.PI) / 180;
+      const el = (pose.elevation * Math.PI) / 180;
+      const dx = Math.cos(el) * Math.sin(az);
+      const dy = Math.sin(el);
+      const dz = Math.cos(el) * Math.cos(az);
+      return Math.abs((-dy * dx) / Math.hypot(dx, dz));
+    };
+    for (let p = ACTS.scatter[0]; p <= 1; p += 0.02) {
+      expect(acrossScreen(cameraAt(CAMERA_PATH, p))).toBeLessThan(0.42);
     }
   });
 });
