@@ -1,17 +1,63 @@
-import { useMemo } from 'react';
-import { meta } from '../../lib/data';
-import { renderMarkdown } from '../../lib/markdown';
-import { aboutMarkdown, site } from '../../lib/siteContent';
-import { Sheet } from '../Sheet';
+import { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
+import { countWords, numberWords, revealAmount, sectionProgress } from '../../lib/reveal';
+import { aboutMarkdown } from '../../lib/siteContent';
 
+/**
+ * The about text, inked in as the reader scrolls.
+ *
+ * Words are written straight to the DOM on scroll rather than through state:
+ * there are a couple of hundred of them and they change on every frame of the
+ * scroll, so re-rendering would be the whole cost of the section.
+ */
 export function About() {
-  const html = useMemo(() => renderMarkdown(aboutMarkdown), []);
+  const section = useRef<HTMLElement>(null);
+  const words = useRef<HTMLSpanElement[]>([]);
+
+  const paragraphs = useMemo(() => numberWords(aboutMarkdown), []);
+  const total = useMemo(() => countWords(aboutMarkdown), []);
+
+  const paint = useCallback(() => {
+    const node = section.current;
+    if (!node) return;
+    const { top, height } = node.getBoundingClientRect();
+    const progress = sectionProgress(top, height, window.innerHeight);
+    for (let i = 0; i < words.current.length; i++) {
+      const span = words.current[i];
+      if (span) span.style.setProperty('--lit', String(revealAmount(progress, i, total)));
+    }
+  }, [total]);
+
+  useLayoutEffect(() => {
+    paint();
+    window.addEventListener('scroll', paint, { passive: true });
+    window.addEventListener('resize', paint);
+    return () => {
+      window.removeEventListener('scroll', paint);
+      window.removeEventListener('resize', paint);
+    };
+  }, [paint]);
+
   return (
-    <Sheet id="about" title="About" number={3}>
-      <div className="about">
-        <img className="about__avatar" src={meta.avatarUrl} alt={`${site.name}'s avatar`} width={120} height={120} loading="lazy" />
-        <div className="about__text" dangerouslySetInnerHTML={{ __html: html }} />
+    <section className="reveal" id="about" ref={section} aria-label="About">
+      <div className="reveal__frame">
+        <div className="reveal__text">
+          {paragraphs.map((paragraph, p) => (
+            <p key={p}>
+              {paragraph.map(({ word, index }) => (
+                <span
+                  key={index}
+                  className="reveal__word"
+                  ref={(el) => {
+                    if (el) words.current[index] = el;
+                  }}
+                >
+                  {word}{' '}
+                </span>
+              ))}
+            </p>
+          ))}
+        </div>
       </div>
-    </Sheet>
+    </section>
   );
 }

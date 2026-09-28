@@ -41,7 +41,7 @@ export function HeroOverlay() {
             scroll to run the machine · click a part
           </p>
           <Scrubber />
-          <p className="hero__stamp label">Sheet 1/5 · Rev {rev}</p>
+          <p className="hero__stamp label">Sheet 1/4 · Rev {rev}</p>
         </div>
       </div>
     </div>

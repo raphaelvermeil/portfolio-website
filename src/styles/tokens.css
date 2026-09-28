@@ -5,6 +5,8 @@
   --muted: #74726c;
   --accent: #d8453a;
   --line: rgba(30, 29, 27, 0.2);
+  /* Unread words in the about reveal. */
+  --reveal-dim: #b4b2ac;
   --panel: rgba(226, 224, 219, 0.94);
   --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;

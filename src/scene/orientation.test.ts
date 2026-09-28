@@ -29,14 +29,9 @@ describe('machineAxis', () => {
     for (let p = 0; p <= 1; p += 0.05) expect(machineAxis(p).length()).toBeCloseTo(1, 6);
   });
 
-  it('turns about the vertical as well as tipping up', () => {
-    // A pure tip-up would keep the axis in one vertical plane; the yaw means
-    // its heading swings round as it rises.
-    const heading = (p: number) => {
-      const a = machineAxis(p);
-      return Math.atan2(a.z, a.x);
-    };
-    expect(Math.abs(heading(0.9) - heading(0.1))).toBeGreaterThan(0.2);
+  it('stands up in the plane of the screen, never leaving it', () => {
+    // A single turn about Z keeps the axis in the XY plane the whole way.
+    for (let p = 0; p <= 1; p += 0.02) expect(machineAxis(p).z).toBeCloseTo(0, 9);
   });
 
   it('clamps outside the range', () => {
@@ -54,6 +49,14 @@ describe('machineAxis', () => {
 describe('machineQuaternion', () => {
   it('is a unit rotation at every step', () => {
     for (let p = 0; p <= 1; p += 0.05) expect(machineQuaternion(p).length()).toBeCloseTo(1, 6);
+  });
+
+  it('turns about Z alone', () => {
+    for (let p = 0; p <= 1; p += 0.05) {
+      const q = machineQuaternion(p);
+      expect(q.x).toBeCloseTo(0, 9);
+      expect(q.y).toBeCloseTo(0, 9);
+    }
   });
 
   it('ends at no rotation at all, so the layout is used as built', () => {

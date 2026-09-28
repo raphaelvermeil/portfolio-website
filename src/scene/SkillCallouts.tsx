@@ -37,7 +37,7 @@ function CalloutMarker({ part }: { part: SkillPart }) {
   return (
     <group ref={group}>
       <Html
-        position={[part.direction[0] * (placement.radius + 0.7), 0, part.direction[1] * (placement.radius + 0.7)]}
+        position={[0, placement.radius + 2.1, 0]}
         center
         zIndexRange={[6, 0]}
         style={{ pointerEvents: 'none' }}
