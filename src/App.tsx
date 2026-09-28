@@ -8,15 +8,15 @@ import { Projects } from './ui/sections/Projects';
 import { Skills } from './ui/sections/Skills';
 
 /**
- * The home page is one scroll spine: type, then the machine, then the work, then
- * who made it. A project route replaces it entirely with that project's article.
+ * The home page is one scroll spine: type, the machine, who made it, then the
+ * work. A project route replaces it entirely with that project's article.
  */
 function Home() {
   return (
     <main>
       <MachineSection />
-      <Projects />
       <About />
+      <Projects />
       <Skills />
       <Contact />
       <Footer />

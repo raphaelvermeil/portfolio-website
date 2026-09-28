@@ -2,12 +2,15 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useMemo } from 'react';
 import { MathUtils, Vector3 } from 'three';
 import { CAMERA_PATH, cameraAt, framingDistance, posePosition } from './cameraPath';
-import { machineAxis } from './orientation';
 import { SCATTER_DISTANCE } from './skillParts';
 import { actProgress, explodeAmount, stage } from './timeline';
 
 /** How quickly the camera catches up to the scroll position. */
 const SMOOTHING = 6;
+
+/** The two orientations the machine passes between as it stands up. */
+const FLAT = { x: 1, y: 0, z: 0 };
+const UPRIGHT = { x: 0, y: 1, z: 0 };
 
 interface Props {
   /** Axial extent closed up. */
@@ -34,7 +37,6 @@ interface Props {
 export function ScrollCamera({ assembledLength, explodedLength, diameter, fov, margin }: Props) {
   const aspect = useThree((s) => s.size.width / s.size.height);
   const desired = useMemo(() => new Vector3(), []);
-  const axisScratch = useMemo(() => new Vector3(), []);
 
   useFrame(({ camera }, dt) => {
     const progress = explodeAmount(stage.current);
@@ -43,11 +45,14 @@ export function ScrollCamera({ assembledLength, explodedLength, diameter, fov, m
     // The fan widens the machine around its middle; the frame has to allow for
     // it without treating it as extra length.
     const spread = SCATTER_DISTANCE * actProgress(stage.current, 'scatter') + diameter / 2;
-    const axis = machineAxis(actProgress(stage.current, 'upright'), axisScratch);
-    const [x, y, z] = posePosition(
-      pose,
-      framingDistance(pose, axis, length, diameter, fov, aspect, margin, spread),
+    // Framed for whichever way round the machine needs more room, rather than
+    // for the way it happens to be facing. Otherwise the twist would dolly the
+    // camera in and out, and standing up would stop reading as one rotation.
+    const distance = Math.max(
+      framingDistance(pose, FLAT, length, diameter, fov, aspect, margin, spread),
+      framingDistance(pose, UPRIGHT, length, diameter, fov, aspect, margin, spread),
     );
+    const [x, y, z] = posePosition(pose, distance);
     desired.set(x, y, z);
 
     camera.position.x = MathUtils.damp(camera.position.x, desired.x, SMOOTHING, dt);

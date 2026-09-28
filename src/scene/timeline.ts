@@ -23,16 +23,20 @@ export const ACTS = {
   /** The machine fades up into the space the type leaves. */
   machineIn: [0.09, 0.22],
   /** Lying flat across the screen, it comes apart along its axis. */
-  explode: [0.18, 0.42],
-  /** It twists up out of the horizontal until the axis stands vertical. */
-  upright: [0.4, 0.6],
+  explode: [0.18, 0.4],
+  /**
+   * It stands up: one turn from horizontal to vertical. The camera holds still
+   * for the whole of this, so the rotation is the only thing moving.
+   */
+  upright: [0.4, 0.56],
   /**
    * Only once it is standing do the labelled parts step off the axis, so the
-   * separation is read against a column rather than mid-twist.
+   * separation is read against a column rather than mid-twist. The gap before
+   * it is the camera rising to look down into the stack.
    */
-  scatter: [0.62, 0.88],
-  /** It clears out, handing over to the project grid. */
-  machineOut: [0.9, 1],
+  scatter: [0.66, 0.9],
+  /** It clears out, handing over to the about text. */
+  machineOut: [0.92, 1],
 } as const;
 
 export type ActName = keyof typeof ACTS;

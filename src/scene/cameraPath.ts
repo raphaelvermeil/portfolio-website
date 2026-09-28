@@ -18,21 +18,20 @@ export interface CameraPose {
 /**
  * The shot list, in step with the acts in timeline.ts.
  *
- * The machine stands upright, so the column is vertical on screen throughout and
- * elevation alone decides how much we look down it.
+ * Only one thing moves at a time.
  *
- * It opens low, almost level with the stack, and holds there while the machine
- * comes apart. Then the camera rises in one move to look down into it, arriving
- * just as the labelled parts step off the axis, and stays there while they fan
- * out around the column. Azimuth only drifts, to keep the parts from lining up
- * flat. Neither angle ever runs backwards.
+ * The camera opens low and almost level, drifts a little while the machine
+ * comes apart, then holds perfectly still for the twist — so standing the
+ * machine up reads as a single rotation and nothing else. Once it is upright
+ * the camera rises, alone, to look down into the stack, arriving just as the
+ * labelled parts step off the axis. Neither angle ever runs backwards.
  */
 export const CAMERA_PATH: CameraKey[] = [
-  { at: 0, azimuth: -22, elevation: 6, distance: 1 },
-  { at: 0.2, azimuth: -10, elevation: 10, distance: 1.02 },
-  { at: 0.44, azimuth: 6, elevation: 16, distance: 1.04 },
-  { at: 0.62, azimuth: 26, elevation: 56, distance: 1 },
-  { at: 0.8, azimuth: 36, elevation: 62, distance: 1 },
+  { at: 0, azimuth: -20, elevation: 8, distance: 1 },
+  { at: 0.3, azimuth: -14, elevation: 8, distance: 1 },
+  // Held identical through the twist: the machine turns, the camera does not.
+  { at: 0.56, azimuth: -14, elevation: 8, distance: 1 },
+  { at: 0.66, azimuth: 2, elevation: 58, distance: 1 },
   { at: 1, azimuth: 42, elevation: 64, distance: 1 },
 ];
 

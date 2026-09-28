@@ -85,6 +85,21 @@ describe('CAMERA_PATH', () => {
     expect(last.elevation).toBeLessThan(80);
   });
 
+  it('holds perfectly still while the machine twists, so only one thing moves', () => {
+    const held = cameraAt(CAMERA_PATH, ACTS.upright[0]);
+    for (let p = ACTS.upright[0]; p <= ACTS.upright[1]; p += 0.005) {
+      const pose = cameraAt(CAMERA_PATH, p);
+      expect(pose.azimuth).toBeCloseTo(held.azimuth, 9);
+      expect(pose.elevation).toBeCloseTo(held.elevation, 9);
+      expect(pose.distance).toBeCloseTo(held.distance, 9);
+    }
+  });
+
+  it('waits for the machine to be standing before it starts rising', () => {
+    expect(cameraAt(CAMERA_PATH, ACTS.upright[1]).elevation).toBeLessThan(20);
+    expect(cameraAt(CAMERA_PATH, ACTS.scatter[0]).elevation).toBeGreaterThan(45);
+  });
+
   it('is already looking down into the stack when the parts step off it', () => {
     expect(cameraAt(CAMERA_PATH, ACTS.scatter[0]).elevation).toBeGreaterThan(45);
   });
