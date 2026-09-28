@@ -75,8 +75,16 @@ const rad = (deg: number) => (deg * Math.PI) / 180;
  * Without this the machine fits broadside and overflows once the path swings
  * round and lifts.
  */
+export interface Axis {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export function framingDistance(
   pose: CameraPose,
+  /** Unit direction the machine's axis points in world space. */
+  axis: Axis,
   length: number,
   diameter: number,
   fovDegrees: number,
@@ -85,25 +93,34 @@ export function framingDistance(
   /** Radius of the fanned-out parts, which sit around the column's middle. */
   spread = 0,
 ): number {
-  // The machine stands on the world's vertical, so its length lands entirely on
-  // the screen's vertical, foreshortened by how far the camera has risen. Its
-  // girth is all that governs the width, whatever the azimuth.
-  const el = rad(pose.elevation);
   const radius = diameter / 2;
-  const cos = Math.abs(Math.cos(el));
-  const sin = Math.abs(Math.sin(el));
 
-  // The column's ends and the fan are not stacked: the fanned parts sit around
-  // the middle, so whichever reaches higher on screen governs, not their sum.
-  const halfHeight = Math.max((length / 2) * cos, spread * sin) + radius;
-  const halfWidth = Math.max(spread, radius);
+  // The camera's own basis, built the way three builds it from world up.
+  const [fx, fy, fz] = posePosition(pose, 1);
+  const horizontal = Math.hypot(fz, fx) || 1e-6;
+  const rx = fz / horizontal;
+  const rz = -fx / horizontal;
+  // Screen up is forward crossed with right; right has no vertical component.
+  const ux = fy * rz;
+  const uy = fz * rx - fx * rz;
+  const uz = -fy * rx;
+
+  const half = length / 2;
+  const onRight = Math.abs(axis.x * rx + axis.z * rz);
+  const onUp = Math.abs(axis.x * ux + axis.y * uy + axis.z * uz);
+  const towardCamera = Math.abs(axis.x * fx + axis.y * fy + axis.z * fz);
+
+  // The machine's ends and its fan are not stacked: the fanned parts sit around
+  // the middle, so whichever reaches further on screen governs, not their sum.
+  const halfHeight = Math.max(half * onUp, spread) + radius;
+  const halfWidth = Math.max(half * onRight, spread) + radius;
 
   const tanHalfV = Math.tan(rad(fovDegrees) / 2);
   const tanHalfH = tanHalfV * aspect;
 
-  // Once the camera rises, the near end of the column is much closer than the
-  // centre and magnifies accordingly. Fit against that, or the top overflows.
-  const near = (length / 2) * sin + radius;
+  // The near end of a tilted machine is much closer than its centre and
+  // magnifies accordingly. Fit against that, or it overflows the frame.
+  const near = half * towardCamera + radius;
 
   return (Math.max(halfWidth / tanHalfH, halfHeight / tanHalfV) + near) * margin * pose.distance;
 }

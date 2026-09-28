@@ -1,14 +1,16 @@
 import { Line } from '@react-three/drei';
-import { Canvas } from '@react-three/fiber';
-import { useEffect, useState } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { projectById } from '../lib/data';
 import { useMediaQuery } from '../lib/hooks';
 import { useStore } from '../lib/store';
 import { ScrollCamera } from './ScrollCamera';
 import { SkillCallouts } from './SkillCallouts';
 import { Gear } from './Gear';
+import { Quaternion, type Group } from 'three';
 import { CAMERA_PATH, cameraAt, posePosition } from './cameraPath';
-import { useScrollStage } from './timeline';
+import { machineQuaternion } from './orientation';
+import { actProgress, stage, useScrollStage } from './timeline';
 import { assembledLength, machineDiameter, machineLength, motionById, placements } from './machine';
 import { BACKGROUND, INK_DIM } from './theme';
 
@@ -17,6 +19,24 @@ import { BACKGROUND, INK_DIM } from './theme';
 const MARGIN = 1.14;
 /** A long lens flattens perspective, the way a technical illustration is drawn. */
 const FOV = 22;
+
+/**
+ * Turns the whole machine from lying flat to standing upright as the twist act
+ * runs. Everything in the scene rides inside this, so the parts, the spindle
+ * and the callouts all stay locked together through the move.
+ */
+function MachineRoot({ children }: { children: ReactNode }) {
+  const root = useRef<Group>(null);
+  const rotation = useMemo(() => new Quaternion(), []);
+
+  useFrame(() => {
+    if (root.current) {
+      root.current.quaternion.copy(machineQuaternion(actProgress(stage.current, 'upright'), rotation));
+    }
+  });
+
+  return <group ref={root}>{children}</group>;
+}
 
 /** Centre line the parts are threaded onto, extending a little past the end parts. */
 function Spindle() {
@@ -63,12 +83,13 @@ export function Machine() {
       onPointerMissed={() => setSelected(null)}
     >
       <color attach="background" args={[BACKGROUND]} />
-      <Spindle />
-      {placements.map((p) => (
-        <Gear key={p.id} placement={p} project={projectById[p.id]} motion={motionById[p.id]} />
-      ))}
-
-      <SkillCallouts />
+      <MachineRoot>
+        <Spindle />
+        {placements.map((p) => (
+          <Gear key={p.id} placement={p} project={projectById[p.id]} motion={motionById[p.id]} />
+        ))}
+        <SkillCallouts />
+      </MachineRoot>
       <ScrollCamera
         assembledLength={assembledLength}
         explodedLength={machineLength}

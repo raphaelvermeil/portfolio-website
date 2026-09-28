@@ -22,12 +22,13 @@ export const ACTS = {
   typeOut: [0.03, 0.14],
   /** The machine fades up into the space the type leaves. */
   machineIn: [0.09, 0.22],
-  /** Seen from the side, it comes apart along its axis. */
-  explode: [0.18, 0.46],
+  /** Lying flat across the screen, it comes apart along its axis. */
+  explode: [0.18, 0.42],
+  /** It twists up out of the horizontal until the axis stands vertical. */
+  upright: [0.4, 0.6],
   /**
-   * Only once the camera has finished climbing do the labelled parts step off
-   * the axis, so the separation is read from above rather than edge-on. The
-   * stretch between this and the explode is the climb itself.
+   * Only once it is standing do the labelled parts step off the axis, so the
+   * separation is read against a column rather than mid-twist.
    */
   scatter: [0.62, 0.88],
   /** It clears out, handing over to the project grid. */

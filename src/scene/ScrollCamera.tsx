@@ -2,6 +2,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useMemo } from 'react';
 import { MathUtils, Vector3 } from 'three';
 import { CAMERA_PATH, cameraAt, framingDistance, posePosition } from './cameraPath';
+import { machineAxis } from './orientation';
 import { SCATTER_DISTANCE } from './skillParts';
 import { actProgress, explodeAmount, stage } from './timeline';
 
@@ -33,6 +34,7 @@ interface Props {
 export function ScrollCamera({ assembledLength, explodedLength, diameter, fov, margin }: Props) {
   const aspect = useThree((s) => s.size.width / s.size.height);
   const desired = useMemo(() => new Vector3(), []);
+  const axisScratch = useMemo(() => new Vector3(), []);
 
   useFrame(({ camera }, dt) => {
     const progress = explodeAmount(stage.current);
@@ -41,9 +43,10 @@ export function ScrollCamera({ assembledLength, explodedLength, diameter, fov, m
     // The fan widens the machine around its middle; the frame has to allow for
     // it without treating it as extra length.
     const spread = SCATTER_DISTANCE * actProgress(stage.current, 'scatter') + diameter / 2;
+    const axis = machineAxis(actProgress(stage.current, 'upright'), axisScratch);
     const [x, y, z] = posePosition(
       pose,
-      framingDistance(pose, length, diameter, fov, aspect, margin, spread),
+      framingDistance(pose, axis, length, diameter, fov, aspect, margin, spread),
     );
     desired.set(x, y, z);
 

@@ -1,7 +1,8 @@
 import { PerspectiveCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { CAMERA_PATH, cameraAt, framingDistance, posePosition, type CameraKey } from './cameraPath';
-import { ACTS } from './timeline';
+import { machineAxis } from './orientation';
+import { ACTS, actProgress } from './timeline';
 
 const path: CameraKey[] = [
   { at: 0, azimuth: 0, elevation: 0, distance: 1 },
@@ -94,25 +95,43 @@ describe('CAMERA_PATH', () => {
     }
   });
 
-  it('leaves the column standing vertical on screen at every pose', () => {
-    // Projected through a real camera: two points on the machine's upright axis
-    // must land on the same screen x, or the column leans.
+  it('leaves the column standing vertical on screen once the twist is done', () => {
+    // Projected through a real camera: two points on the machine's axis must
+    // land on the same screen x, or the column leans.
     const camera = new PerspectiveCamera(22, 1.6, 0.1, 500);
     const top = new Vector3();
     const bottom = new Vector3();
 
-    for (let p = 0; p <= 1; p += 0.02) {
+    for (let p = ACTS.upright[1]; p <= 1; p += 0.02) {
       const pose = cameraAt(CAMERA_PATH, p);
       camera.position.set(...posePosition(pose, 30));
       camera.lookAt(0, 0, 0);
       camera.updateMatrixWorld(true);
 
-      top.set(0, 6, 0).project(camera);
-      bottom.set(0, -6, 0).project(camera);
+      const axis = machineAxis(actProgress(p, 'upright'));
+      top.copy(axis).multiplyScalar(6).project(camera);
+      bottom.copy(axis).multiplyScalar(-6).project(camera);
 
       expect(top.x).toBeCloseTo(bottom.x, 6);
       expect(top.y).toBeGreaterThan(bottom.y);
     }
+  });
+
+  it('lays the machine across the screen before the twist', () => {
+    const camera = new PerspectiveCamera(22, 1.6, 0.1, 500);
+    const a = new Vector3();
+    const b = new Vector3();
+    const pose = cameraAt(CAMERA_PATH, 0);
+    camera.position.set(...posePosition(pose, 30));
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld(true);
+
+    const axis = machineAxis(0);
+    a.copy(axis).multiplyScalar(6).project(camera);
+    b.copy(axis).multiplyScalar(-6).project(camera);
+
+    // Far more horizontal travel than vertical: it reads as lying down.
+    expect(Math.abs(a.x - b.x)).toBeGreaterThan(Math.abs(a.y - b.y) * 2);
   });
 });
 
@@ -145,8 +164,11 @@ describe('framingDistance', () => {
   const DIAMETER = 3.2;
   const FOV = 22;
   const ASPECT = 1.6;
+  const UP = { x: 0, y: 1, z: 0 };
+  const FLAT = { x: 1, y: 0, z: 0 };
   const pose = (azimuth: number, elevation = 0, distance = 1) => ({ azimuth, elevation, distance });
-  const fit = (p: ReturnType<typeof pose>) => framingDistance(p, LENGTH, DIAMETER, FOV, ASPECT, 1);
+  const fit = (p: ReturnType<typeof pose>, axis = UP) =>
+    framingDistance(p, axis, LENGTH, DIAMETER, FOV, ASPECT, 1);
 
   /**
    * Half-extents of the upright machine on screen, as fractions of the frame,
@@ -183,7 +205,7 @@ describe('framingDistance', () => {
   it('keeps the machine inside the frame at every pose on the path', () => {
     for (let t = 0; t <= 1; t += 0.02) {
       const p = cameraAt(CAMERA_PATH, t);
-      const d = framingDistance(p, LENGTH, DIAMETER, FOV, ASPECT);
+      const d = framingDistance(p, UP, LENGTH, DIAMETER, FOV, ASPECT);
       const { widthRatio, heightRatio } = onScreen(p, d);
       expect(Math.max(widthRatio, heightRatio)).toBeLessThanOrEqual(1);
     }
@@ -193,7 +215,7 @@ describe('framingDistance', () => {
     const SPREAD = 4.1;
     for (let t = 0; t <= 1; t += 0.02) {
       const p = cameraAt(CAMERA_PATH, t);
-      const d = framingDistance(p, LENGTH, DIAMETER, FOV, ASPECT, 1.12, SPREAD);
+      const d = framingDistance(p, UP, LENGTH, DIAMETER, FOV, ASPECT, 1.12, SPREAD);
       const { widthRatio, heightRatio } = onScreen(p, d, SPREAD);
       expect(Math.max(widthRatio, heightRatio)).toBeLessThanOrEqual(1);
     }
@@ -201,13 +223,25 @@ describe('framingDistance', () => {
 
   it('does not treat the fan as extra length', () => {
     // A fan around the middle must cost less than the same reach added to the ends.
-    const withFan = framingDistance(pose(0, 60), LENGTH, DIAMETER, FOV, ASPECT, 1, 4);
-    const asLength = framingDistance(pose(0, 60), LENGTH + 8, DIAMETER, FOV, ASPECT, 1);
+    const withFan = framingDistance(pose(0, 60), UP, LENGTH, DIAMETER, FOV, ASPECT, 1, 4);
+    const asLength = framingDistance(pose(0, 60), UP, LENGTH + 8, DIAMETER, FOV, ASPECT, 1);
     expect(withFan).toBeLessThan(asLength);
   });
 
-  it('ignores azimuth, since an upright column is the same width all round', () => {
+  it('ignores azimuth for an upright column, which is the same width all round', () => {
     expect(fit(pose(70, 20))).toBeCloseTo(fit(pose(-15, 20)), 9);
+  });
+
+  it('follows the axis: a machine lying down needs room across, not up', () => {
+    // Seen level and broadside, lying down puts the length on the screen's
+    // wide axis, so it can come closer than standing up does.
+    expect(fit(pose(0, 0), FLAT)).toBeLessThan(fit(pose(0, 0), UP));
+  });
+
+  it('frames a machine pointed at the camera by its girth alone', () => {
+    const endOn = fit(pose(90, 0), FLAT);
+    expect(endOn).toBeLessThan(fit(pose(0, 0), FLAT));
+    expect(endOn).toBeGreaterThan(DIAMETER / 2);
   });
 
   it('never collapses onto the machine when looking straight down it', () => {
@@ -216,6 +250,6 @@ describe('framingDistance', () => {
 
   it('scales with the pose distance multiplier and the margin', () => {
     expect(fit(pose(0, 0, 2))).toBeCloseTo(fit(pose(0)) * 2, 6);
-    expect(framingDistance(pose(0), LENGTH, DIAMETER, FOV, ASPECT, 1.5)).toBeCloseTo(fit(pose(0)) * 1.5, 6);
+    expect(framingDistance(pose(0), UP, LENGTH, DIAMETER, FOV, ASPECT, 1.5)).toBeCloseTo(fit(pose(0)) * 1.5, 6);
   });
 });
