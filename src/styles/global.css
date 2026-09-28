@@ -102,10 +102,15 @@ h3,
 }
 
 .titlecard__name {
-  grid-row: 1;
-  align-self: end;
-  margin: 0 0 clamp(8px, 1.5vw, 18px);
-  font-size: clamp(0.7rem, 1.1vw, 0.85rem);
+  position: absolute;
+  top: calc(var(--gutter) + env(safe-area-inset-top, 0px));
+  left: var(--gutter);
+  margin: 0;
+  /* Matches .hero__nav so the two sit on one line across the top. */
+  font-size: 0.75rem;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+  color: var(--ink);
 }
 
 .titlecard__role {
@@ -927,13 +932,9 @@ h3,
   transition: opacity 0.2s linear;
 }
 
-.callout--down {
-  flex-direction: column;
-}
-
 .callout__stem {
   width: 1px;
-  height: 46px;
+  height: 30px;
   opacity: 0.55;
 }
 

@@ -19,13 +19,15 @@ const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
  */
 export const ACTS = {
   /** Oversized type holds, then clears the stage. */
-  typeOut: [0.04, 0.2],
+  typeOut: [0.04, 0.16],
   /** The machine fades up into the space the type leaves. */
-  machineIn: [0.12, 0.3],
-  /** It comes apart and turns. */
-  explode: [0.24, 0.84],
+  machineIn: [0.1, 0.24],
+  /** It comes apart along its axis and turns. */
+  explode: [0.2, 0.56],
+  /** Labelled parts lift off the axis and fan out, seen from above. */
+  scatter: [0.56, 0.86],
   /** It clears out, handing over to the project grid. */
-  machineOut: [0.86, 1],
+  machineOut: [0.9, 1],
 } as const;
 
 export type ActName = keyof typeof ACTS;
@@ -45,6 +47,19 @@ export function scrollStage(scrollY: number, heroHeight: number, viewportHeight:
   const runway = heroHeight - viewportHeight;
   if (runway <= 0) return 0;
   return clamp01(scrollY / runway);
+}
+
+/**
+ * How far the stack has drawn back together by the end of the scatter. The fan
+ * needs room across the axis, and a machine that stayed fully spread along it
+ * as well would be mostly empty air, framing small. Pulling the axis back in as
+ * the labelled parts step out keeps the composition tight.
+ */
+const RECOMPACT = 0.55;
+
+/** Axial spread: opens through the explode, then eases back during the scatter. */
+export function explodeAmount(master: number): number {
+  return actProgress(master, 'explode') * (1 - RECOMPACT * actProgress(master, 'scatter'));
 }
 
 /**

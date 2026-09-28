@@ -67,6 +67,12 @@ describe('CAMERA_PATH', () => {
     expect(Math.max(...elevations)).toBeGreaterThan(0);
     expect(Math.min(...elevations)).toBeLessThan(0);
   });
+
+  it('finishes looking down on the machine, where the fan reads', () => {
+    const last = CAMERA_PATH[CAMERA_PATH.length - 1];
+    expect(last.elevation).toBeGreaterThan(45);
+    expect(last.elevation).toBeLessThan(85);
+  });
 });
 
 describe('posePosition', () => {

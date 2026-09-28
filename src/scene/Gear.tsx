@@ -14,7 +14,8 @@ import { languageColor } from '../lib/palette';
 import { useStore } from '../lib/store';
 import type { Project } from '../lib/types';
 import { partX, type GearPlacement } from './axisLayout';
-import { actProgress, stage } from './timeline';
+import { SCATTER_DISTANCE, scatterById } from './skillParts';
+import { actProgress, explodeAmount, stage } from './timeline';
 import { partById } from './machine';
 import { moverAngle, moverOffset, partAngle, type PartMotion } from './motion';
 import { BACKGROUND, EDGE_THRESHOLD_DEG, INK } from './theme';
@@ -33,6 +34,7 @@ interface Props {
 export function Gear({ placement, project, motion }: Props) {
   const { id, language, radius, quaternion } = placement;
   const pieces = partById[id];
+  const escape = scatterById[id];
 
   const bodyEdges = useMemo(() => new EdgesGeometry(pieces.body, EDGE_THRESHOLD_DEG), [pieces]);
   const moverEdges = useMemo(
@@ -87,7 +89,15 @@ export function Gear({ placement, project, motion }: Props) {
     clock.current += dt * rate;
     const t = clock.current;
 
-    if (slider.current) slider.current.position.x = partX(placement, actProgress(stage.current, 'explode'));
+    if (slider.current) {
+      // Labelled parts leave the axis; everything else stays on it.
+      const away = escape ? actProgress(stage.current, 'scatter') * SCATTER_DISTANCE : 0;
+      slider.current.position.set(
+        partX(placement, explodeAmount(stage.current)),
+        escape ? escape[0] * away : 0,
+        escape ? escape[1] * away : 0,
+      );
+    }
     if (spinner.current) spinner.current.rotation.z = partAngle(motion, t);
 
     for (let i = 0; i < pieces.movers.length; i++) {
@@ -154,7 +164,6 @@ export function Gear({ placement, project, motion }: Props) {
         <Html
           position={[0, radius + 0.3, 0]}
           center
-          distanceFactor={14}
           zIndexRange={[10, 0]}
           style={{ pointerEvents: 'none' }}
         >

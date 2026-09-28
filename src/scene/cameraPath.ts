@@ -17,16 +17,17 @@ export interface CameraPose {
 
 /**
  * The shot list. Scrolling walks the camera through these poses, so the machine
- * turns as it comes apart: it opens broadside and closed, swings up and round as
- * the parts separate, passes close to end-on where they read as nested rings,
- * then drops below the axis and settles back to three-quarter.
+ * turns as it comes apart: it opens broadside and closed, dips below the axis,
+ * swings up and round as the parts separate, and finally climbs to look down on
+ * the assembly while the labelled parts fan out beneath it.
  */
 export const CAMERA_PATH: CameraKey[] = [
   { at: 0, azimuth: -26, elevation: 9, distance: 1 },
-  { at: 0.3, azimuth: -6, elevation: 17, distance: 1.04 },
-  { at: 0.55, azimuth: 27, elevation: 23, distance: 1.1 },
-  { at: 0.8, azimuth: 58, elevation: 11, distance: 1.16 },
-  { at: 1, azimuth: 34, elevation: -9, distance: 1.06 },
+  { at: 0.2, azimuth: -8, elevation: -7, distance: 1.03 },
+  { at: 0.44, azimuth: 22, elevation: 12, distance: 1.06 },
+  { at: 0.66, azimuth: 48, elevation: 26, distance: 1.05 },
+  { at: 0.86, azimuth: 66, elevation: 54, distance: 1.02 },
+  { at: 1, azimuth: 72, elevation: 66, distance: 1 },
 ];
 
 /** Eases the joins so the camera arrives and leaves each pose gently. */

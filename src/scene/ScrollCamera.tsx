@@ -2,7 +2,8 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useMemo } from 'react';
 import { MathUtils, Vector3 } from 'three';
 import { CAMERA_PATH, cameraAt, framingDistance, posePosition } from './cameraPath';
-import { actProgress, stage } from './timeline';
+import { SCATTER_DISTANCE } from './skillParts';
+import { actProgress, explodeAmount, stage } from './timeline';
 
 /** How quickly the camera catches up to the scroll position. */
 const SMOOTHING = 6;
@@ -34,10 +35,12 @@ export function ScrollCamera({ assembledLength, explodedLength, diameter, fov, m
   const desired = useMemo(() => new Vector3(), []);
 
   useFrame(({ camera }, dt) => {
-    const progress = actProgress(stage.current, 'explode');
+    const progress = explodeAmount(stage.current);
     const pose = cameraAt(CAMERA_PATH, progress);
     const length = assembledLength + (explodedLength - assembledLength) * progress;
-    const [x, y, z] = posePosition(pose, framingDistance(pose, length, diameter, fov, aspect, margin));
+    // The fan widens the machine across its axis, so the frame has to allow for it.
+    const spread = diameter + 2 * SCATTER_DISTANCE * actProgress(stage.current, 'scatter');
+    const [x, y, z] = posePosition(pose, framingDistance(pose, length, spread, fov, aspect, margin));
     desired.set(x, y, z);
 
     camera.position.x = MathUtils.damp(camera.position.x, desired.x, SMOOTHING, dt);

@@ -1,73 +1,53 @@
 import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import type { Group } from 'three';
-import { percent, skillShares } from '../lib/skills';
+import { percent } from '../lib/skills';
 import { partX } from './axisLayout';
-import { placements } from './machine';
-import { actProgress, stage } from './timeline';
+import { placementById } from './machine';
+import { SCATTER_DISTANCE, SKILL_PARTS, type SkillPart } from './skillParts';
+import { actProgress, explodeAmount, stage } from './timeline';
 
-/** Callouts only earn their place once the parts have separated. */
-const APPEAR_AT = 0.35;
-const FULL_AT = 0.55;
+/** Labels earn their place once their part is clearly off the axis. */
+const APPEAR_AT = 0.25;
+const FULL_AT = 0.5;
 
-interface Callout {
-  language: string;
-  color: string;
-  label: string;
-  placementIndex: number;
-  /** Which way the leader runs, so consecutive callouts do not stack up. */
-  side: 1 | -1;
-}
-
-/** Spreads the callouts evenly along the assembly so their leaders never cross. */
-function planCallouts(): Callout[] {
-  const shares = skillShares().slice(0, 5);
-  if (placements.length === 0) return [];
-  return shares.map((s, i) => ({
-    language: s.language,
-    color: s.color,
-    label: percent(s.share),
-    placementIndex: Math.round(((i + 0.5) / shares.length) * (placements.length - 1)),
-    side: i % 2 === 0 ? 1 : -1,
-  }));
-}
-
-function CalloutMarker({ callout }: { callout: Callout }) {
+function CalloutMarker({ part }: { part: SkillPart }) {
   const group = useRef<Group>(null);
   const label = useRef<HTMLDivElement>(null);
-  const placement = placements[callout.placementIndex];
+  const placement = placementById[part.id];
 
   useFrame(() => {
-    const explode = actProgress(stage.current, 'explode');
-    if (group.current) group.current.position.x = partX(placement, explode);
+    const scatter = actProgress(stage.current, 'scatter');
+    const away = scatter * SCATTER_DISTANCE;
+
+    if (group.current) {
+      group.current.position.set(
+        partX(placement, explodeAmount(stage.current)),
+        part.direction[0] * away,
+        part.direction[1] * away,
+      );
+    }
     if (label.current) {
-      const t = (explode - APPEAR_AT) / (FULL_AT - APPEAR_AT);
+      const t = (scatter - APPEAR_AT) / (FULL_AT - APPEAR_AT);
       label.current.style.opacity = String(Math.min(1, Math.max(0, t)));
     }
   });
 
-  const lift = (placement.radius + 1.7) * callout.side;
-
   return (
     <group ref={group}>
       <Html
-        position={[0, lift, 0]}
+        position={[0, placement.radius + 0.5, 0]}
         center
-        distanceFactor={13}
         zIndexRange={[6, 0]}
         style={{ pointerEvents: 'none' }}
       >
-        <div
-          ref={label}
-          className={`callout callout--${callout.side === 1 ? 'up' : 'down'}`}
-          style={{ opacity: 0 }}
-        >
-          <span className="callout__stem" style={{ background: callout.color }} />
+        <div ref={label} className="callout" style={{ opacity: 0 }}>
+          <span className="callout__stem" style={{ background: part.color }} />
           <span className="callout__text">
-            <span className="callout__dot" style={{ background: callout.color }} />
-            {callout.language}
-            <span className="callout__share">{callout.label}</span>
+            <span className="callout__dot" style={{ background: part.color }} />
+            {part.language}
+            <span className="callout__share">{percent(part.share)}</span>
           </span>
         </div>
       </Html>
@@ -75,13 +55,12 @@ function CalloutMarker({ callout }: { callout: Callout }) {
   );
 }
 
-/** Labels the machine with what the work is made of, drawn out on leader lines. */
+/** Names the skills that make the machine work, on the parts that carry them. */
 export function SkillCallouts() {
-  const callouts = useMemo(planCallouts, []);
   return (
     <>
-      {callouts.map((c) => (
-        <CalloutMarker key={c.language} callout={c} />
+      {SKILL_PARTS.map((part) => (
+        <CalloutMarker key={part.language} part={part} />
       ))}
     </>
   );
