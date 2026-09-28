@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CAMERA_PATH, cameraAt, framingDistance, posePosition, type CameraKey } from './cameraPath';
+import { ACTS } from './timeline';
 
 const path: CameraKey[] = [
   { at: 0, azimuth: 0, elevation: 0, distance: 1 },
@@ -62,16 +63,27 @@ describe('CAMERA_PATH', () => {
     for (const a of azimuths) expect(Math.abs(a)).toBeLessThan(90);
   });
 
-  it('views the machine from both above and below', () => {
+  it('climbs without ever dropping back down', () => {
     const elevations = CAMERA_PATH.map((k) => k.elevation);
-    expect(Math.max(...elevations)).toBeGreaterThan(0);
-    expect(Math.min(...elevations)).toBeLessThan(0);
+    expect(elevations).toEqual([...elevations].sort((a, b) => a - b));
+    expect(elevations[0]).toBeLessThan(15);
   });
 
-  it('finishes looking down on the machine, where the fan reads', () => {
+  it('finishes looking down on the machine, short of straight overhead', () => {
     const last = CAMERA_PATH[CAMERA_PATH.length - 1];
     expect(last.elevation).toBeGreaterThan(45);
-    expect(last.elevation).toBeLessThan(85);
+    // At 90 the framing maths loses the horizontal it projects onto.
+    expect(last.elevation).toBeLessThan(80);
+  });
+
+  it('is already overhead by the time the parts step off the axis', () => {
+    expect(cameraAt(CAMERA_PATH, ACTS.scatter[0]).elevation).toBeGreaterThan(45);
+  });
+
+  it('holds that view for the whole separation', () => {
+    for (let p = ACTS.scatter[0]; p <= ACTS.scatter[1]; p += 0.02) {
+      expect(cameraAt(CAMERA_PATH, p).elevation).toBeGreaterThan(45);
+    }
   });
 });
 

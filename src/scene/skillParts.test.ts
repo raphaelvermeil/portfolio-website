@@ -43,16 +43,22 @@ describe('planSkillParts', () => {
     for (const p of plan) expect(Math.hypot(...p.direction)).toBeCloseTo(1, 6);
   });
 
-  it('fans the directions evenly around the axis', () => {
-    const TAU = Math.PI * 2;
-    const angles = plan.map((p) => Math.atan2(p.direction[1], p.direction[0]));
-    // atan2 wraps at ±π, so bring each step back into one turn before comparing.
-    const gaps = angles.slice(1).map((a, i) => ((a - angles[i]) % TAU + TAU) % TAU);
-    for (const gap of gaps) expect(gap).toBeCloseTo(TAU / plan.length, 6);
+  it('alternates sides of the axis', () => {
+    const sides = plan.map((p) => Math.sign(p.direction[1]));
+    for (let i = 1; i < sides.length; i++) expect(sides[i]).toBe(-sides[i - 1]);
   });
 
-  it('sends nothing straight up, where its own label sits', () => {
-    for (const p of plan) expect(Math.abs(p.direction[1] - 1)).toBeGreaterThan(0.01);
+  it('travels mostly across the axis, not towards the overhead camera', () => {
+    // The z component is what an overhead camera sees; y points at it and would
+    // foreshorten away, so it must stay the smaller of the two.
+    for (const p of plan) expect(Math.abs(p.direction[1])).toBeGreaterThan(Math.abs(p.direction[0]));
+  });
+
+  it('tilts them apart rather than stacking them on two lines', () => {
+    const tilts = plan.map((p) => p.direction[0]);
+    expect(new Set(tilts.map((t) => t.toFixed(4))).size).toBe(plan.length);
+    expect(Math.max(...tilts)).toBeGreaterThan(0);
+    expect(Math.min(...tilts)).toBeLessThan(0);
   });
 
   it('caps how many parts are pulled out', () => {

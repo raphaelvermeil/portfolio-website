@@ -19,13 +19,17 @@ const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
  */
 export const ACTS = {
   /** Oversized type holds, then clears the stage. */
-  typeOut: [0.04, 0.16],
+  typeOut: [0.03, 0.14],
   /** The machine fades up into the space the type leaves. */
-  machineIn: [0.1, 0.24],
-  /** It comes apart along its axis and turns. */
-  explode: [0.2, 0.56],
-  /** Labelled parts lift off the axis and fan out, seen from above. */
-  scatter: [0.56, 0.86],
+  machineIn: [0.09, 0.22],
+  /** Seen from the side, it comes apart along its axis. */
+  explode: [0.18, 0.46],
+  /**
+   * Only once the camera has finished climbing do the labelled parts step off
+   * the axis, so the separation is read from above rather than edge-on. The
+   * stretch between this and the explode is the climb itself.
+   */
+  scatter: [0.62, 0.88],
   /** It clears out, handing over to the project grid. */
   machineOut: [0.9, 1],
 } as const;
