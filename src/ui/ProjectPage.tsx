@@ -27,7 +27,6 @@ export function ProjectPage({ id }: { id: string }) {
   const project = projectById[id];
 
   useEffect(() => {
-    window.scrollTo(0, 0);
     document.title = project ? `${project.title} — ${site.name}` : `Not found — ${site.name}`;
     return () => {
       document.title = site.name;

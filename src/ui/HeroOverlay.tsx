@@ -1,9 +1,21 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, type MouseEvent } from 'react';
 import { meta } from '../lib/data';
 import { useStore } from '../lib/store';
 import { actProgress, useStageEffect } from '../scene/timeline';
 import { SkillsPanel } from './SkillsPanel';
 import { Scrubber } from './Scrubber';
+
+/**
+ * Scrolls to a section without touching the hash: the hash is the router's, and
+ * a fragment there would read as a route change. Smooth here rather than in CSS,
+ * so restoring a remembered position stays instant.
+ */
+const jumpTo = (id: string) => (event: MouseEvent<HTMLAnchorElement>) => {
+  const target = document.getElementById(id);
+  if (!target) return;
+  event.preventDefault();
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
 
 export function HeroOverlay() {
   const hasInteracted = useStore((s) => s.hasInteracted);
@@ -24,10 +36,18 @@ export function HeroOverlay() {
   return (
     <div className="hero">
       <nav className="hero__nav" aria-label="Sections">
-        <a href="#projects">Work</a>
-        <a href="#about">About</a>
-        <a href="#skills">Skills</a>
-        <a href="#contact">Contact</a>
+        <a href="#projects" onClick={jumpTo('projects')}>
+          Work
+        </a>
+        <a href="#about" onClick={jumpTo('about')}>
+          About
+        </a>
+        <a href="#skills" onClick={jumpTo('skills')}>
+          Skills
+        </a>
+        <a href="#contact" onClick={jumpTo('contact')}>
+          Contact
+        </a>
         <a href={meta.profileUrl} target="_blank" rel="noopener noreferrer">
           GitHub ↗
         </a>
