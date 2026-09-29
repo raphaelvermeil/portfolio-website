@@ -1,8 +1,8 @@
 import { PerspectiveCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { CAMERA_PATH, cameraAt, framingDistance, posePosition, type CameraKey } from './cameraPath';
+import { CAMERA_PATH, cameraAt, cameraStateFor, framingDistance, posePosition, type CameraKey } from './cameraPath';
 import { machineAxis } from './orientation';
-import { ACTS, actProgress } from './timeline';
+import { ACTS, actProgress, explodeAmount } from './timeline';
 
 const path: CameraKey[] = [
   { at: 0, azimuth: 0, elevation: 0, distance: 1 },
@@ -266,5 +266,62 @@ describe('framingDistance', () => {
   it('scales with the pose distance multiplier and the margin', () => {
     expect(fit(pose(0, 0, 2))).toBeCloseTo(fit(pose(0)) * 2, 6);
     expect(framingDistance(pose(0), UP, LENGTH, DIAMETER, FOV, ASPECT, 1.5)).toBeCloseTo(fit(pose(0)) * 1.5, 6);
+  });
+});
+
+describe('cameraStateFor', () => {
+  const options = {
+    assembledLength: 7.5,
+    explodedLength: 14.9,
+    diameter: 3.2,
+    scatterDistance: 2.5,
+    fov: 22,
+    aspect: 1.6,
+    margin: 1.14,
+  };
+
+  /** Exactly how ScrollCamera feeds it, so these test what actually runs. */
+  const at = (master: number) =>
+    cameraStateFor(master, actProgress(master, 'scatter'), explodeAmount(master), options);
+
+  it('reads the shot list off the master timeline, not the axial spread', () => {
+    // explodeAmount peaks at the end of the explode; the camera must not be at
+    // its final pose there, or it has run the whole path before the twist.
+    expect(explodeAmount(ACTS.explode[1])).toBeCloseTo(1, 6);
+    expect(at(ACTS.explode[1]).pose.elevation).toBeLessThan(20);
+  });
+
+  it('never lets the camera run backwards', () => {
+    let previousElevation = -Infinity;
+    let previousAzimuth = -Infinity;
+    for (let m = 0; m <= 1; m += 0.005) {
+      const { pose } = at(m);
+      expect(pose.elevation).toBeGreaterThanOrEqual(previousElevation - 1e-9);
+      expect(pose.azimuth).toBeGreaterThanOrEqual(previousAzimuth - 1e-9);
+      previousElevation = pose.elevation;
+      previousAzimuth = pose.azimuth;
+    }
+  });
+
+  it('holds the camera still for the whole twist', () => {
+    const held = at(ACTS.upright[0]).pose;
+    for (let m = ACTS.upright[0]; m <= ACTS.upright[1]; m += 0.005) {
+      expect(at(m).pose.azimuth).toBeCloseTo(held.azimuth, 9);
+      expect(at(m).pose.elevation).toBeCloseTo(held.elevation, 9);
+    }
+  });
+
+  it('is looking down into the stack for the whole separation', () => {
+    for (let m = ACTS.scatter[0]; m <= ACTS.scatter[1]; m += 0.01) {
+      expect(at(m).pose.elevation).toBeGreaterThan(45);
+    }
+  });
+
+  it('keeps a sane distance throughout', () => {
+    for (let m = 0; m <= 1; m += 0.01) {
+      const { distance } = at(m);
+      expect(distance).toBeGreaterThan(options.diameter);
+      expect(distance).toBeLessThan(200);
+    }
   });
 });

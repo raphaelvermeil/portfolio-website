@@ -14,7 +14,6 @@ import { actProgress, stage, useScrollStage } from './timeline';
 import { assembledLength, machineDiameter, machineLength, motionById, placements } from './machine';
 import { BACKGROUND, INK_DIM } from './theme';
 
-/** Multiple of the assembly length to stand back by, so it fills most of the frame. */
 /** Room left around the machine once it is fitted to the frame. */
 const MARGIN = 1.14;
 /** A long lens flattens perspective, the way a technical illustration is drawn. */

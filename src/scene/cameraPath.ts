@@ -134,3 +134,58 @@ export function posePosition(pose: CameraPose, distance: number): [number, numbe
     distance * Math.cos(el) * Math.cos(az),
   ];
 }
+
+export interface FramingOptions {
+  /** Axial extent closed up. */
+  assembledLength: number;
+  /** Axial extent pulled fully apart. */
+  explodedLength: number;
+  /** Widest part across the axis. */
+  diameter: number;
+  /** Radius the labelled parts fan out to when fully scattered. */
+  scatterDistance: number;
+  /** Vertical field of view in degrees; must match the canvas camera. */
+  fov: number;
+  aspect: number;
+  margin: number;
+}
+
+export interface CameraState {
+  pose: CameraPose;
+  distance: number;
+}
+
+/**
+ * The camera for a given master scroll position: the whole per-frame
+ * calculation, so it can be tested as the thing that actually runs.
+ *
+ * Note which progress feeds what. The shot list is keyed on the master
+ * timeline, because its keys line up with the acts. The machine's axial spread
+ * uses explodeAmount, which opens and then draws back in — feeding that to the
+ * shot list instead would run the camera forwards and then backwards again.
+ */
+export function cameraStateFor(
+  master: number,
+  spreadProgress: number,
+  axialProgress: number,
+  options: FramingOptions,
+): CameraState {
+  const pose = cameraAt(CAMERA_PATH, master);
+  const { assembledLength, explodedLength, diameter, scatterDistance, fov, aspect, margin } = options;
+
+  const length = assembledLength + (explodedLength - assembledLength) * axialProgress;
+  const spread = scatterDistance * spreadProgress + diameter / 2;
+
+  // Framed for whichever way round the machine needs more room, rather than for
+  // the way it happens to be facing, so the twist never dollies the camera.
+  const distance = Math.max(
+    framingDistance(pose, FLAT_AXIS, length, diameter, fov, aspect, margin, spread),
+    framingDistance(pose, UPRIGHT_AXIS, length, diameter, fov, aspect, margin, spread),
+  );
+
+  return { pose, distance };
+}
+
+/** The two orientations the machine passes between as it stands up. */
+const FLAT_AXIS: Axis = { x: 1, y: 0, z: 0 };
+const UPRIGHT_AXIS: Axis = { x: 0, y: 1, z: 0 };
