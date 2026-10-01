@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../lib/random';
-import { BUILDERS, PART_NAMES, toPieces } from './builders';
+import { BUILDERS, PART_NAMES, RIB_FOOT, toPieces } from './builders';
 
 const RADIUS = 1.2;
 
@@ -108,12 +108,14 @@ describe('dome frame', () => {
     g.computeBoundingBox();
     const { min, max } = g.boundingBox!;
     const [x, y, z] = [max.x - min.x, max.y - min.y, max.z - min.z];
-    // Half a circle: as wide as the diameter, half as tall, and thin. The tube
-    // adds its own thickness at each extreme, hence the upper bounds.
+    // Wider than it is tall, and thin. Taller than a bare half-circle because
+    // the rib overshoots the equator and tucks under: that overshoot is what
+    // makes the dome widest above its base rather than at it.
     expect(x).toBeGreaterThanOrEqual(RADIUS * 2);
     expect(x).toBeLessThan(RADIUS * 2.1);
-    expect(y).toBeGreaterThanOrEqual(RADIUS);
-    expect(y).toBeLessThan(RADIUS * 1.1);
+    expect(y).toBeGreaterThan(RADIUS);
+    expect(y).toBeLessThan(RADIUS * 1.5);
+    expect(y).toBeLessThan(x);
     expect(y).toBeGreaterThan(z * 3);
   });
 
@@ -136,5 +138,11 @@ describe('dome frame', () => {
     g.computeBoundingBox();
     const { min, max } = g.boundingBox!;
     expect(max.z - min.z).toBeGreaterThan(RADIUS * 0.1);
+  });
+
+  it('carries the rib past the equator, so the dome is widest above its base', () => {
+    // RIB_FOOT < 1 is the whole difference between a cranium and a bandstand.
+    expect(RIB_FOOT).toBeLessThan(1);
+    expect(RIB_FOOT).toBeGreaterThan(0.85);
   });
 });

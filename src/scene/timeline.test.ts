@@ -22,8 +22,24 @@ describe('ACTS', () => {
     expect(ACTS.machineIn[0]).toBeLessThan(ACTS.typeOut[1]);
   });
 
-  it('leaves no dead gap between the machine arriving and coming apart', () => {
-    expect(ACTS.explode[0]).toBeLessThanOrEqual(ACTS.machineIn[1]);
+  it('turns the brain before it comes apart', () => {
+    // The reverse of the stack, which lay flat as an unreadable row and had to
+    // separate first. An intact cranium is the striking thing, so it is seen
+    // whole and turned before it opens.
+    expect(ACTS.upright[1]).toBeLessThanOrEqual(ACTS.explode[0]);
+  });
+
+  it('leaves no dead gap where nothing at all is happening', () => {
+    const spans: [number, number][] = Object.values(ACTS)
+      .map(([from, to]) => [from, to] as [number, number])
+      .sort((a, b) => a[0] - b[0]);
+    let covered = spans[0][1];
+    for (const [from, to] of spans.slice(1)) {
+      // The camera rise between the reveal and the labels is the one deliberate
+      // pause, and it is a move of its own rather than an empty stage.
+      expect(from - covered).toBeLessThanOrEqual(0.03);
+      covered = Math.max(covered, to);
+    }
   });
 
   it('finishes exactly at the end of the scroll', () => {
@@ -91,11 +107,13 @@ describe('explodeAmount', () => {
     expect(explodeAmount(ACTS.explode[1])).toBeCloseTo(1, 6);
   });
 
-  it('draws back into a column as the parts fan out, without closing up entirely', () => {
+  it('opens and stays open, because the regions fan out of a fixed frame', () => {
+    // The stack drew back in here, so its fanned parts had a column to leave.
+    // The brain's frame is that fixed thing, so pulling the regions back toward
+    // it would undo the separation the labels point at.
     const open = explodeAmount(ACTS.scatter[0]);
-    const end = explodeAmount(1);
-    expect(end).toBeLessThan(open / 2);
-    expect(end).toBeGreaterThan(0.1);
+    expect(open).toBeCloseTo(1, 6);
+    expect(explodeAmount(1)).toBeCloseTo(open, 6);
   });
 
   it('never leaves 0..1, and never runs backwards during the explode', () => {

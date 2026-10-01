@@ -284,11 +284,41 @@ describe('cameraStateFor', () => {
   const at = (master: number) =>
     cameraStateFor(master, actProgress(master, 'scatter'), explodeAmount(master), options);
 
-  it('reads the shot list off the master timeline, not the axial spread', () => {
-    // explodeAmount peaks at the end of the explode; the camera must not be at
-    // its final pose there, or it has run the whole path before the twist.
-    expect(explodeAmount(ACTS.explode[1])).toBeCloseTo(1, 6);
-    expect(at(ACTS.explode[1]).pose.elevation).toBeLessThan(20);
+  /** The same call with the spread forced, to prove the pose ignores it. */
+  const atSpread = (master: number, axial: number) =>
+    cameraStateFor(master, actProgress(master, 'scatter'), axial, options);
+
+  it('reads the shot list off the master timeline, not the radial spread', () => {
+    // The bug this guards: feeding explodeAmount to the shot list instead of
+    // the master clock. explodeAmount peaks at the end of the explode, so the
+    // camera would reach its final pose there and then run back down the path.
+    //
+    // Checked by holding the master fixed and varying the spread: the pose is
+    // the master's business alone, and only the distance may respond.
+    for (const master of [0.2, 0.4, 0.5, 0.7, 0.9]) {
+      const closed = atSpread(master, 0);
+      const open = atSpread(master, 1);
+      expect(open.pose.azimuth).toBeCloseTo(closed.pose.azimuth, 9);
+      expect(open.pose.elevation).toBeCloseTo(closed.pose.elevation, 9);
+      // The distance must respond, or the check above proves nothing: it would
+      // pass just as well against a function that ignored its arguments.
+      expect(open.distance).toBeGreaterThan(closed.distance);
+    }
+  });
+
+  it('holds the camera still for the whole reveal rotation', () => {
+    // The brain turning has to be the only thing moving, or the rotation reads
+    // as a camera move instead.
+    const start = at(ACTS.upright[0]).pose;
+    for (let m = ACTS.upright[0]; m <= ACTS.upright[1]; m += 0.01) {
+      expect(at(m).pose.azimuth).toBeCloseTo(start.azimuth, 9);
+      expect(at(m).pose.elevation).toBeCloseTo(start.elevation, 9);
+    }
+  });
+
+  it('rises only after the reveal, arriving as the labels do', () => {
+    expect(at(ACTS.upright[1]).pose.elevation).toBeLessThan(20);
+    expect(at(ACTS.scatter[0]).pose.elevation).toBeGreaterThan(50);
   });
 
   it('never lets the camera run backwards', () => {

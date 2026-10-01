@@ -28,9 +28,9 @@ export interface CameraPose {
  */
 export const CAMERA_PATH: CameraKey[] = [
   { at: 0, azimuth: -20, elevation: 8, distance: 1 },
-  { at: 0.3, azimuth: -14, elevation: 8, distance: 1 },
-  // Held identical through the twist: the machine turns, the camera does not.
-  { at: 0.56, azimuth: -14, elevation: 8, distance: 1 },
+  { at: 0.22, azimuth: -14, elevation: 8, distance: 1 },
+  // Held identical through the reveal: the brain turns, the camera does not.
+  { at: 0.42, azimuth: -14, elevation: 8, distance: 1 },
   { at: 0.66, azimuth: 2, elevation: 58, distance: 1 },
   { at: 1, azimuth: 42, elevation: 64, distance: 1 },
 ];

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { Vector3 } from 'three';
-import { DOME_RADIUS, EXPLODE_GAP, domeLayout, seatPosition, type LayoutInput } from './domeLayout';
+import {
+  CRANIUM,
+  DOME_RADIUS,
+  EXPLODE_GAP,
+  craniumRadiusAt,
+  domeLayout,
+  seatPosition,
+  type LayoutInput,
+} from './domeLayout';
 
 const input: LayoutInput[] = [
   {
@@ -106,5 +114,44 @@ describe('domeLayout', () => {
 
   it('is empty for no input', () => {
     expect(domeLayout([])).toMatchObject({ placements: [], assembledReach: 0, explodedReach: 0 });
+  });
+});
+
+describe('the cranium is an ovoid, not a hemisphere', () => {
+  it('is flatter over the top than it is wide', () => {
+    expect(CRANIUM.y).toBeLessThan(CRANIUM.x);
+    expect(CRANIUM.y).toBeLessThan(CRANIUM.z);
+  });
+
+  it('is longer front-to-back than side-to-side', () => {
+    expect(CRANIUM.z).toBeGreaterThan(CRANIUM.x);
+  });
+
+  it('measures azimuth from +Z, the same way seatOf does', () => {
+    // Azimuth 0 looks down +Z, so it gets the front-to-back semi-axis; a
+    // quarter turn away is +X and gets the side-to-side one. These two agreeing
+    // is the whole point: a rib and the seats under it must describe one shape.
+    expect(craniumRadiusAt(0)).toBeCloseTo(CRANIUM.z, 6);
+    expect(craniumRadiusAt(90)).toBeCloseTo(CRANIUM.x, 6);
+    expect(craniumRadiusAt(180)).toBeCloseTo(CRANIUM.z, 6);
+    const mid = craniumRadiusAt(45);
+    expect(mid).toBeGreaterThan(CRANIUM.x);
+    expect(mid).toBeLessThan(CRANIUM.z);
+  });
+
+  it('agrees with where seatOf actually puts a part', () => {
+    for (const azimuth of [0, 30, 90, 150, 240]) {
+      const [p] = domeLayout([
+        { region: 'a', azimuth, elevation: 0, parts: [{ id: 'p', radius: 0.1 }] },
+      ]).placements;
+      const plan = Math.hypot(p.assembled[0], p.assembled[2]);
+      expect(plan).toBeCloseTo(craniumRadiusAt(azimuth) * DOME_RADIUS * 0.62, 6);
+    }
+  });
+
+  it('seats parts further out front-to-back than side-to-side', () => {
+    const [front] = domeLayout([{ region: 'a', azimuth: 0, elevation: 0, parts: [{ id: 'p', radius: 0.1 }] }]).placements;
+    const [side] = domeLayout([{ region: 'b', azimuth: 90, elevation: 0, parts: [{ id: 'q', radius: 0.1 }] }]).placements;
+    expect(Math.abs(front.assembled[2])).toBeGreaterThan(Math.abs(side.assembled[0]));
   });
 });

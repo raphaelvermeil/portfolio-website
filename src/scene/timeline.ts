@@ -20,20 +20,24 @@ const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 export const ACTS = {
   /** Oversized type holds, then clears the stage. */
   typeOut: [0.03, 0.14],
-  /** The machine fades up into the space the type leaves. */
+  /** The cranium fades up, intact and dormant. */
   machineIn: [0.09, 0.22],
-  /** Lying flat across the screen, it comes apart along its axis. */
-  explode: [0.18, 0.4],
   /**
-   * It stands up: one turn from horizontal to vertical. The camera holds still
-   * for the whole of this, so the rotation is the only thing moving.
+   * The reveal rotation.
+   *
+   * Named `upright` for continuity with the earlier designs, which stood a
+   * column up here; the brain is already upright and simply turns. Renaming
+   * would touch six files and buy nothing.
+   *
+   * It runs *before* the explode, which is the reverse of the stack. A stack
+   * lying flat is an unreadable row, so it had to come apart first. An intact
+   * cranium is the striking thing, so it is seen whole and turned before it
+   * opens.
    */
-  upright: [0.4, 0.56],
-  /**
-   * Only once it is standing do the labelled parts step off the axis, so the
-   * separation is read against a column rather than mid-twist. The gap before
-   * it is the camera rising to look down into the stack.
-   */
+  upright: [0.22, 0.42],
+  /** Regions separate radially out of the frame, which stays put. */
+  explode: [0.42, 0.64],
+  /** Labels arrive as the camera finishes rising to look into the assembly. */
   scatter: [0.66, 0.9],
   /** It clears out, handing over to the about text. */
   machineOut: [0.92, 1],
@@ -59,16 +63,18 @@ export function scrollStage(scrollY: number, heroHeight: number, viewportHeight:
 }
 
 /**
- * How far the stack has drawn back together by the end of the scatter.
+ * How far the assembly draws back together by the end of the scatter.
  *
- * Seen end-on the machine should read as one compact column with a few parts
- * pulled clear of it. Left spread along its axis as well as across it, there is
- * no column left to pull away from — just a field of parts — and the camera,
- * which has to frame all of it, pushes the whole thing small.
+ * Zero for the brain. The stack needed it: seen end-on, a column spread along
+ * its axis as well as across it left nothing to pull away from, and the camera
+ * framing all of it pushed everything small. The brain's regions fan radially
+ * out of a frame that stays put, so the frame is the thing they separate from —
+ * pulling them back toward it before labelling them would undo the separation
+ * the labels point at.
  */
-const RECOMPACT = 0.82;
+const RECOMPACT = 0;
 
-/** Axial spread: opens through the explode, then eases back during the scatter. */
+/** Radial spread: opens through the explode and stays open. */
 export function explodeAmount(master: number): number {
   return actProgress(master, 'explode') * (1 - RECOMPACT * actProgress(master, 'scatter'));
 }

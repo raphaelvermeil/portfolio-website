@@ -1,7 +1,8 @@
 import { Quaternion, Vector3 } from 'three';
 import { FRAME_PARTS, REGIONS } from './brain';
-import { DOME_RADIUS, domeLayout, type SeatPlacement } from './domeLayout';
+import { CRANIUM, DOME_RADIUS, craniumRadiusAt, domeLayout, type SeatPlacement } from './domeLayout';
 import type { PartMotion } from './motion';
+import { RIB_FOOT } from './parts/builders';
 import { buildPart, type PartPieces } from './parts';
 
 /** Each part is built once here; Gear reads its pieces back rather than rebuilding. */
@@ -39,13 +40,29 @@ const framePlacements: SeatPlacement[] = FRAME_PARTS.map((part) => {
   const pieces = buildPart(part.name, part.radius, `${part.name}-${part.id}`);
   partById[part.id] = pieces;
 
-  if (part.name === 'mountingRing') return fixed(part.id, [0, 0, 0], LIE_FLAT, part.radius);
+  // The ring and the cap are built as circles and lie flat, so their local x
+  // and y map to world x and z. Scaling those two turns them into the
+  // cranium's horizontal ellipse.
+  if (part.name === 'mountingRing') {
+    // The ribs tuck inward below their widest point, so the ring meets them
+    // there rather than at the full radius.
+    pieces.body.scale(CRANIUM.x * RIB_FOOT, CRANIUM.z * RIB_FOOT, 1);
+    return fixed(part.id, [0, 0, 0], LIE_FLAT, part.radius * CRANIUM.z);
+  }
   if (part.name === 'crownPlate') {
-    return fixed(part.id, [0, DOME_RADIUS * 0.97, 0], LIE_FLAT, part.radius);
+    pieces.body.scale(CRANIUM.x, CRANIUM.z, 1);
+    return fixed(part.id, [0, DOME_RADIUS * CRANIUM.y * 0.97, 0], LIE_FLAT, part.radius);
   }
 
-  // A rib is built as an arc centred on its own origin, so its ends sit below
-  // the origin. Lift it by that much and they land on the base ring.
+  // A rib is an arc in its own XY plane, turned about +Y to its meridian. Its
+  // local x therefore maps to the horizontal direction at that azimuth, where
+  // the cranium's width is whatever the ellipse gives — only a circular plan
+  // would let every rib share one width.
+  // The quarter turn converts the rib's own frame — local x starts along world
+  // +X — into the module's azimuth, which is measured from +Z.
+  pieces.body.scale(craniumRadiusAt(part.azimuth + 90), CRANIUM.y, 1);
+  // Scaled first, measured second: the arc is centred on its own origin, so
+  // its ends sit below it. Lift by that much and they land on the base ring.
   pieces.body.computeBoundingBox();
   const lift = -pieces.body.boundingBox!.min.y;
   const spin = new Quaternion().setFromAxisAngle(UP, (part.azimuth * Math.PI) / 180);
@@ -75,8 +92,8 @@ export const regionCentroids = layout.regionCentroids;
  * What the camera has to frame, closed up and opened out. The dome itself sets
  * the floor: the frame is always the widest thing until the regions clear it.
  */
-export const brainDiameter = 2 * Math.max(DOME_RADIUS, layout.assembledReach);
-export const explodedDiameter = 2 * Math.max(DOME_RADIUS, layout.explodedReach);
+export const brainDiameter = 2 * Math.max(DOME_RADIUS * CRANIUM.z, layout.assembledReach);
+export const explodedDiameter = 2 * Math.max(DOME_RADIUS * CRANIUM.z, layout.explodedReach);
 
 /** How each part moves. Frame parts are still. */
 export const motionById: Record<string, PartMotion> = {

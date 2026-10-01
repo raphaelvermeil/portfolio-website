@@ -13,8 +13,43 @@ import { Quaternion, Vector3 } from 'three';
  * `region` as a string, so the pure maths does not depend on the design.
  */
 
+const PART_AXIS = new Vector3(0, 0, 1);
+const UP = new Vector3(0, 1, 0);
+const rad = (deg: number) => (deg * Math.PI) / 180;
+
 /** Radius of the cranial frame. Parts are seated inside it. */
 export const DOME_RADIUS = 3.2;
+
+/**
+ * Semi-axis multipliers on DOME_RADIUS, as fractions.
+ *
+ * A cranium is an ovoid, not a hemisphere: flatter over the top and longer
+ * front-to-back than side-to-side. A true hemisphere reads as a circus tent.
+ *
+ * This is shared deliberately. The frame is scaled by it and the seats are
+ * placed on it, so the two cannot drift apart — scaling the whole scene instead
+ * would stretch the gears into ellipses.
+ */
+export const CRANIUM = { x: 1, y: 0.86, z: 1.14 } as const;
+
+/**
+ * The cranium's radius in the horizontal plane at a given azimuth.
+ *
+ * Each meridian rib spans a different width, because the ellipse it lies in is
+ * only circular when the two horizontal semi-axes agree.
+ *
+ * Azimuth is measured the same way everywhere in this module: from +Z, turning
+ * toward +X, so `seatOf` and this agree on what an angle means. A caller
+ * working in a frame rotated about +Y — a rib, whose local x starts along world
+ * +X — has to add the quarter turn itself.
+ */
+export function craniumRadiusAt(azimuth: number): number {
+  const a = rad(azimuth);
+  const alongX = Math.sin(a) / CRANIUM.x;
+  const alongZ = Math.cos(a) / CRANIUM.z;
+  return 1 / Math.sqrt(alongX * alongX + alongZ * alongZ);
+}
+
 /** How far a part travels outward when the assembly opens. */
 export const EXPLODE_GAP = 2.3;
 /** Seats sit at this fraction of the dome radius, so parts live under the ribs. */
@@ -23,10 +58,6 @@ const INNER = 0.62;
 const CLUSTER = 0.62;
 /** Each part in a cluster sits slightly deeper than the last, so they read as a mechanism. */
 const STAGGER = 0.16;
-
-const PART_AXIS = new Vector3(0, 0, 1);
-const UP = new Vector3(0, 1, 0);
-const rad = (deg: number) => (deg * Math.PI) / 180;
 
 export interface LayoutPart {
   id: string;
@@ -75,10 +106,19 @@ export function seatPosition(
 function seatOf(azimuth: number, elevation: number): Vector3 {
   const a = rad(azimuth);
   const e = rad(elevation);
+  // On the inner ovoid, not an inner sphere, so clusters sit under the ribs
+  // wherever the frame happens to bulge.
+  //
+  // The plan radius comes from craniumRadiusAt rather than from scaling x and z
+  // separately. Scaling componentwise would make the azimuth the ellipse's
+  // parametric angle instead of its polar angle, and the two agree only on the
+  // axes — the seats would then describe a slightly different surface from the
+  // ribs above them, by about half a percent.
+  const plan = craniumRadiusAt(azimuth);
   return new Vector3(
-    Math.cos(e) * Math.sin(a),
-    Math.sin(e),
-    Math.cos(e) * Math.cos(a),
+    Math.cos(e) * Math.sin(a) * plan,
+    Math.sin(e) * CRANIUM.y,
+    Math.cos(e) * Math.cos(a) * plan,
   ).multiplyScalar(DOME_RADIUS * INNER);
 }
 

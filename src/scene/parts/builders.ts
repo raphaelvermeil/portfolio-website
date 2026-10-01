@@ -440,7 +440,20 @@ export const gearCluster: PartBuilder = (radius, rand) => {
 };
 
 /**
- * One meridian rib of the cranium, swept base → crown → base.
+ * How far past the equator each rib carries on, in radians.
+ *
+ * This is what separates a cranium from a pavilion roof. A half-circle rib is
+ * widest where it meets the ground, which reads as a bowl or a bandstand. A
+ * real cranium is widest about a third of the way up and tucks back in
+ * underneath, so the ribs have to overshoot the equator and curl inward.
+ */
+const RIB_TUCK = (20 * Math.PI) / 180;
+
+/** Where the rib ends sit, as a fraction of the dome radius. The base ring lands here. */
+export const RIB_FOOT = Math.cos(RIB_TUCK);
+
+/**
+ * One meridian rib of the cranium, swept foot → crown → foot.
  *
  * A half torus with a four-sided tube: one continuous geometry, so the edge
  * threshold suppresses the facets along its length and only the four
@@ -449,13 +462,17 @@ export const gearCluster: PartBuilder = (radius, rand) => {
  * boundary as a free edge and the rib reads as a ladder.
  *
  * TorusGeometry already lies in the XY plane and sweeps from angle 0, which is
- * exactly the meridian wanted, so no reorienting.
+ * the meridian wanted, so no reorienting — only the tuck rotation.
  *
  * `radius` is the dome's radius, not the rib's own thickness.
  */
 export const domeRib: PartBuilder = (radius, rand) => {
   const tube = radius * between(rand, 0.022, 0.03);
-  return merge([new TorusGeometry(radius, tube, 4, 60, Math.PI)]);
+  const arc = Math.PI + 2 * RIB_TUCK;
+  const geometry = new TorusGeometry(radius, tube, 4, 72, arc);
+  // Swung back by half the overshoot so the rib stays symmetric about its apex.
+  geometry.applyMatrix4(new Matrix4().makeRotationZ(-RIB_TUCK));
+  return merge([geometry]);
 };
 
 /** The ring the ribs land on, carrying a circle of bolt bosses. */
