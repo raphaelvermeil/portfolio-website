@@ -5,7 +5,6 @@ import { hasWebGL } from '../lib/webgl';
 import { Machine } from '../scene/MachineScene';
 import { placements } from '../scene/machine';
 import { actProgress, useStageEffect } from '../scene/timeline';
-import { DetailPanel } from './DetailPanel';
 import { HeroOverlay } from './HeroOverlay';
 import { TitleCard } from './TitleCard';
 
@@ -28,7 +27,7 @@ const order = placements.map((p) => p.id);
 
 let lastIndex = -1;
 
-/** Tab cycles through gears while the stage itself is focused; leaves the section after the last one. Esc clears. */
+/** Tab cycles through layers while the stage itself is focused; leaves the section after the last one. Esc clears. */
 function cycle(e: KeyboardEvent<HTMLDivElement>) {
   if (e.target !== e.currentTarget) return;
   const { selected, setSelected } = useStore.getState();
@@ -73,7 +72,7 @@ export function MachineSection() {
             role="group"
             tabIndex={0}
             onKeyDown={cycle}
-            aria-label="Exploded assembly. Press Tab to step through parts."
+            aria-label="The stack, exploded. Press Tab to step through its layers; each one filters the project list."
           >
             <Machine />
           </div>
@@ -81,7 +80,6 @@ export function MachineSection() {
           <StaticProjects />
         )}
         <HeroOverlay />
-        {webgl && <DetailPanel />}
       </div>
     </section>
   );

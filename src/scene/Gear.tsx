@@ -10,9 +10,8 @@ import {
   type Group,
 } from 'three';
 import { useReducedMotion } from '../lib/hooks';
-import { languageColor } from '../lib/palette';
 import { useStore } from '../lib/store';
-import type { Project } from '../lib/types';
+import type { AssemblyLayer } from './assembly';
 import { axisOffset, type GearPlacement } from './axisLayout';
 import { SCATTER_DISTANCE, scatterById } from './skillParts';
 import { actProgress, explodeAmount, stage } from './timeline';
@@ -27,12 +26,12 @@ const REDUCED_RATE = 0.25;
 
 interface Props {
   placement: GearPlacement;
-  project: Project;
+  layer: AssemblyLayer;
   motion: PartMotion;
 }
 
-export function Gear({ placement, project, motion }: Props) {
-  const { id, language, radius, quaternion } = placement;
+export function Gear({ placement, layer, motion }: Props) {
+  const { id, radius, quaternion } = placement;
   const pieces = partById[id];
   const escape = scatterById[id];
 
@@ -67,7 +66,7 @@ export function Gear({ placement, project, motion }: Props) {
   );
 
   const idleColor = useMemo(() => new Color(INK), []);
-  const activeColor = useMemo(() => new Color(languageColor(project.language)), [project.language]);
+  const activeColor = useMemo(() => new Color(layer.color), [layer.color]);
 
   const slider = useRef<Group>(null);
   const spinner = useRef<Group>(null);
@@ -168,8 +167,8 @@ export function Gear({ placement, project, motion }: Props) {
           style={{ pointerEvents: 'none' }}
         >
           <div className="gear-label">
-            <span className="gear-label__name">{project.title}</span>
-            <span className="gear-label__lang">{language}</span>
+            <span className="gear-label__name">{layer.label}</span>
+            <span className="gear-label__lang">{layer.tech.join(' · ')}</span>
           </div>
         </Html>
       )}

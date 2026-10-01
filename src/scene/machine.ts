@@ -1,24 +1,14 @@
-import { projects } from '../lib/data';
-import type { Project } from '../lib/types';
 import { ASSEMBLY } from './assembly';
 import type { PartMotion } from './motion';
 import { axisLayout, type AxisItem, type GearPlacement } from './axisLayout';
 import { buildPart, type PartPieces } from './parts';
 
-/**
- * The assembly is composed by hand, so it carries no repo data of its own. Each
- * part borrows a project for its label and panel until the two are designed
- * together; parts beyond the repo count, and repos beyond the part count, are
- * simply not paired.
- */
-const paired = ASSEMBLY.slice(0, projects.length);
-
-/** Each part is built once here; Gear reads its pieces back rather than rebuilding. */
+/** Each layer is built once here; Gear reads its pieces back rather than rebuilding. */
 export const partById: Record<string, PartPieces> = {};
 
 /**
- * Axial extent of a part including its movers at full travel, so the layout
- * leaves room for pistons at the top of their stroke.
+ * Axial extent of a layer including its movers at full travel, so the layout
+ * leaves room for a tile at the top of its lift.
  */
 function axialDepth(pieces: PartPieces): number {
   pieces.body.computeBoundingBox();
@@ -33,14 +23,13 @@ function axialDepth(pieces: PartPieces): number {
   return max - min;
 }
 
-const items: AxisItem[] = paired.map((part, i) => {
-  const project = projects[i];
-  const pieces = buildPart(part.name, part.radius, `${part.name}-${i}-${project.id}`);
-  partById[project.id] = pieces;
+const items: AxisItem[] = ASSEMBLY.map((layer) => {
+  const pieces = buildPart(layer.name, layer.radius, `${layer.name}-${layer.id}`);
+  partById[layer.id] = pieces;
   return {
-    id: project.id,
-    language: project.language,
-    radius: part.radius,
+    id: layer.id,
+    language: layer.label,
+    radius: layer.radius,
     depth: axialDepth(pieces),
   };
 });
@@ -52,17 +41,14 @@ export const placementById: Record<string, GearPlacement> = Object.fromEntries(
   placements.map((p) => [p.id, p]),
 );
 
-/** Repos currently shown in the machine, in assembly order. */
-export const machineProjects: Project[] = paired.map((_, i) => projects[i]);
-
 /** Axial extent closed up and pulled apart; the camera frames the larger one. */
 export const assembledLength = layout.assembledLength;
 export const machineLength = layout.explodedLength;
 
-/** Widest part across the axis, used to frame the camera when near end-on. */
+/** Widest layer across the axis, used to frame the camera when near end-on. */
 export const machineDiameter = 2 * Math.max(...placements.map((p) => p.radius));
 
-/** How each part moves, taken from the assembly it was composed in. */
+/** How each layer moves, taken from the assembly it was composed in. */
 export const motionById: Record<string, PartMotion> = Object.fromEntries(
-  placements.map((p, i) => [p.id, paired[i].motion] as const),
+  ASSEMBLY.map((layer) => [layer.id, layer.motion] as const),
 );

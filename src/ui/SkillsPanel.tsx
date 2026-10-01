@@ -1,35 +1,35 @@
-import { percent, skillShares } from '../lib/skills';
+import { projects } from '../lib/data';
+import { layerCounts } from '../lib/layerRepos';
+import { ASSEMBLY } from '../scene/assembly';
 
-const shares = skillShares();
+/** Top of the stack first, the way the drawing reads. */
+const layers = [...ASSEMBLY].reverse();
+const counts = layerCounts(ASSEMBLY, projects);
 
 /**
- * The machine's read-out: what the work is actually made of, as one stacked bar.
- * Shown while the machine holds the stage, alongside the parts it describes.
+ * The stack's read-out: what each layer is, and how many repos are built on it.
+ *
+ * The count is the honest number — repos matched on their own languages and
+ * readme — rather than a share of bytes. Bytes flatter whatever language checks
+ * in the largest files, which on this account is one notebook repo carrying its
+ * plot images.
  */
 export function SkillsPanel() {
-  if (shares.length === 0) return null;
+  if (layers.length === 0) return null;
 
   return (
     <div className="readout">
       <p className="readout__head">
-        <span>Built with</span>
-        <span className="readout__total">{shares.length} languages</span>
+        <span>The stack</span>
+        <span className="readout__total">{layers.length} layers</span>
       </p>
-      <div
-        className="readout__bar"
-        role="img"
-        aria-label={shares.map((s) => `${s.language} ${percent(s.share)}`).join(', ')}
-      >
-        {shares.map((s) => (
-          <span key={s.language} style={{ width: `${s.share * 100}%`, background: s.color }} />
-        ))}
-      </div>
-      <ul className="readout__keys">
-        {shares.map((s) => (
-          <li key={s.language}>
-            <span className="readout__dot" style={{ background: s.color }} aria-hidden="true" />
-            {s.language}
-            <span className="readout__share">{percent(s.share)}</span>
+      <ul className="readout__keys readout__keys--rows">
+        {layers.map((layer) => (
+          <li key={layer.id}>
+            <span className="readout__dot" style={{ background: layer.color }} aria-hidden="true" />
+            {layer.label}
+            <span className="readout__tech">{layer.tech.join(' · ')}</span>
+            <span className="readout__share">{counts[layer.id]}</span>
           </li>
         ))}
       </ul>

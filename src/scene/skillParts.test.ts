@@ -1,42 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import type { SkillShare } from '../lib/skills';
-import type { GearPlacement } from './axisLayout';
+import type { AssemblyLayer } from './assembly';
 import { planSkillParts } from './skillParts';
 
-const items: GearPlacement[] = Array.from({ length: 12 }, (_, i) => ({
-  id: `part-${i}`,
-  language: 'Java',
-  assembled: i,
-  exploded: i * 2,
-  quaternion: [0, 0, 0, 1],
-  radius: 1,
-}));
-
-const shares: SkillShare[] = [
-  { language: 'TypeScript', color: '#4fa3ff', share: 0.4 },
-  { language: 'Java', color: '#ff8a3d', share: 0.25 },
-  { language: 'Python', color: '#5fd67a', share: 0.2 },
-  { language: 'HTML', color: '#ff6b6b', share: 0.1 },
-  { language: 'CSS', color: '#c58cff', share: 0.05 },
+const layers: AssemblyLayer[] = [
+  { id: 'delivery', name: 'deliveryCrates', label: 'Delivery', tech: ['Docker'], color: '#3fbfb0', radius: 1.1, motion: { kind: 'still' } },
+  { id: 'data', name: 'dataDiscs', label: 'Data', tech: ['MongoDB'], color: '#c58cff', radius: 1.2, motion: { kind: 'still' } },
+  { id: 'models', name: 'modelLattice', label: 'Models', tech: ['Python'], color: '#ffa64d', radius: 1.3, motion: { kind: 'still' } },
+  { id: 'services', name: 'serviceBoard', label: 'Services', tech: ['Go'], color: '#5fd67a', radius: 1.4, motion: { kind: 'still' } },
+  { id: 'interface', name: 'interfacePlate', label: 'Interface', tech: ['TypeScript'], color: '#4fa3ff', radius: 1.5, motion: { kind: 'still' } },
 ];
 
 describe('planSkillParts', () => {
-  const plan = planSkillParts(items, shares);
+  const plan = planSkillParts(layers);
 
-  it('pins one part per skill, in share order', () => {
-    expect(plan).toHaveLength(shares.length);
-    expect(plan.map((p) => p.language)).toEqual(shares.map((s) => s.language));
+  it('labels every layer, so nothing on screen is decorative', () => {
+    expect(plan).toHaveLength(layers.length);
+    expect(plan.map((p) => p.id)).toEqual(layers.map((l) => l.id));
+    expect(plan.map((p) => p.label)).toEqual(layers.map((l) => l.label));
   });
 
-  it('never pins two skills to the same part', () => {
-    expect(new Set(plan.map((p) => p.id)).size).toBe(plan.length);
-  });
-
-  it('spreads the parts down the assembly in order', () => {
-    const indices = plan.map((p) => items.findIndex((i) => i.id === p.id));
-    expect(indices).toEqual([...indices].sort((a, b) => a - b));
-    expect(Math.min(...indices)).toBeGreaterThanOrEqual(0);
-    expect(Math.max(...indices)).toBeLessThan(items.length);
+  it('carries each layer\u2019s technologies and colour through to its label', () => {
+    expect(plan.map((p) => p.tech)).toEqual(layers.map((l) => l.tech));
+    expect(plan.map((p) => p.color)).toEqual(layers.map((l) => l.color));
   });
 
   it('escapes along unit directions', () => {
@@ -51,12 +36,12 @@ describe('planSkillParts', () => {
     for (const gap of gaps) expect(gap).toBeCloseTo(TAU / plan.length, 6);
   });
 
-  it('separates every part from every other', () => {
+  it('separates every layer from every other', () => {
     for (let i = 0; i < plan.length; i++) {
       for (let j = i + 1; j < plan.length; j++) {
-        const [ay, az] = plan[i].direction;
-        const [by, bz] = plan[j].direction;
-        expect(Math.hypot(ay - by, az - bz)).toBeGreaterThan(0.2);
+        const [ax, az] = plan[i].direction;
+        const [bx, bz] = plan[j].direction;
+        expect(Math.hypot(ax - bx, az - bz)).toBeGreaterThan(0.2);
       }
     }
   });
@@ -65,14 +50,7 @@ describe('planSkillParts', () => {
     for (const p of plan) expect(Math.abs(p.direction[1] - 1)).toBeGreaterThan(0.01);
   });
 
-  it('caps how many parts are pulled out', () => {
-    const many = Array.from({ length: 20 }, (_, i) => ({ ...shares[0], language: `L${i}` }));
-    expect(planSkillParts(items, many)).toHaveLength(5);
-    expect(planSkillParts(items, many, 3)).toHaveLength(3);
-  });
-
-  it('never asks for more parts than the assembly has', () => {
-    expect(planSkillParts(items.slice(0, 2), shares)).toHaveLength(2);
-    expect(planSkillParts([], shares)).toEqual([]);
+  it('handles an empty stack', () => {
+    expect(planSkillParts([])).toEqual([]);
   });
 });

@@ -1,7 +1,6 @@
 import { Line } from '@react-three/drei';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { projectById } from '../lib/data';
 import { useMediaQuery } from '../lib/hooks';
 import { useStore } from '../lib/store';
 import { ScrollCamera } from './ScrollCamera';
@@ -11,6 +10,7 @@ import { Quaternion, type Group } from 'three';
 import { CAMERA_PATH, cameraAt, posePosition } from './cameraPath';
 import { machineQuaternion } from './orientation';
 import { actProgress, stage, useScrollStage } from './timeline';
+import { layerById } from './assembly';
 import { assembledLength, machineDiameter, machineLength, motionById, placements } from './machine';
 import { BACKGROUND, INK_DIM } from './theme';
 
@@ -85,7 +85,7 @@ export function Machine() {
       <MachineRoot>
         <Spindle />
         {placements.map((p) => (
-          <Gear key={p.id} placement={p} project={projectById[p.id]} motion={motionById[p.id]} />
+          <Gear key={p.id} placement={p} layer={layerById[p.id]} motion={motionById[p.id]} />
         ))}
         <SkillCallouts />
       </MachineRoot>

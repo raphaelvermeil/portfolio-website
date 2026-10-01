@@ -2,8 +2,9 @@ import { skills } from '../../lib/siteContent';
 import { Sheet } from '../Sheet';
 
 /**
- * Tools, not languages: the language breakdown is the machine's read-out now,
- * so repeating it here would say the same thing twice.
+ * Tools, not layers: the stack's read-out already names what each layer of the
+ * architecture is built from, so repeating those here would say the same thing
+ * twice. This is the rest — what does not belong to one layer.
  */
 export function Skills() {
   return (

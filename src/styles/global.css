@@ -654,6 +654,39 @@ h3,
   }
 }
 
+/* --- Layer filter -------------------------------------------------------- */
+.filter {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.filter__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex: none;
+}
+
+.filter__clear {
+  margin-left: auto;
+  border: 1px solid var(--line);
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+}
+
+.filter__clear:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* --- Project grid -------------------------------------------------------- */
 .grid {
   list-style: none;
@@ -855,7 +888,7 @@ h3,
 
 /* --- Skills read-out ----------------------------------------------------- */
 .readout {
-  width: min(340px, 52vw);
+  width: min(390px, 56vw);
   padding: 14px 16px;
   border-radius: 8px;
   background: #1f1e1c;
@@ -913,6 +946,19 @@ h3,
   flex: 0 0 auto;
 }
 
+/** One layer per row, so each label can carry its technologies. */
+.readout__keys--rows {
+  grid-template-columns: 1fr;
+  gap: 5px;
+}
+
+.readout__tech {
+  color: #93908a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .readout__share {
   margin-left: auto;
   color: #93908a;
@@ -935,13 +981,20 @@ h3,
 }
 
 .callout__text {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: 2px;
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.06em;
   color: var(--ink);
+}
+
+.callout__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .callout__dot {
@@ -952,6 +1005,7 @@ h3,
 
 .callout__share {
   color: var(--muted);
+  font-size: 10px;
 }
 
 /* --- Scroll-inked about text --------------------------------------------- */

@@ -1,38 +1,32 @@
 import {
+  Box3,
   BoxGeometry,
   BufferGeometry,
   CylinderGeometry,
-  ExtrudeGeometry,
-  LatheGeometry,
   Matrix4,
-  Path,
-  Shape,
-  SphereGeometry,
-  TorusGeometry,
-  Vector2,
+  Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { createGearGeometry, gearOutline, teethFor } from '../gearGeometry';
 import type { MoverMotion } from '../motion';
 
-/** A sub-assembly that moves independently of the part carrying it. */
+/** A sub-assembly that moves independently of the layer carrying it. */
 export interface Mover {
   /** Centred on its own origin, so it can turn about itself. */
   geometry: BufferGeometry;
-  /** Where it sits within the part. */
+  /** Where it sits within the layer. */
   offset: [number, number, number];
   motion: MoverMotion;
 }
 
 export interface PartPieces {
-  /** The part's own structure, which moves with the part. */
+  /** The layer's own structure, which moves with the layer. */
   body: BufferGeometry;
   movers: Mover[];
 }
 
 /**
- * Builders return a geometry centred on the origin whose spin axis is +Z, or a
- * body plus movers when the part has pieces of its own that move.
+ * Builders return a geometry centred on the origin whose axis is +Z, or a body
+ * plus movers when the layer has pieces of its own that move.
  */
 export type PartBuilder = (radius: number, rand: () => number) => BufferGeometry | PartPieces;
 
@@ -45,17 +39,26 @@ const Y_TO_Z = new Matrix4().makeRotationX(Math.PI / 2);
  */
 const RADIAL_SEGMENTS = 36;
 
-/** Three's lathes, cylinders and tori are built around +Y; the scene spins around +Z. */
+/**
+ * Half-width of a layer's plate, as a share of its nominal radius.
+ *
+ * The camera frames the machine as a cylinder of radius `max(radius)`, so a
+ * square plate has to fit inside that circle: at 0.72 its corners reach
+ * 0.72·√2 ≈ 1.02 radii, which the framing margin absorbs. Raise it and the
+ * corners clip out of frame.
+ */
+const PLATE = 0.72;
+
+/** Three's cylinders are built around +Y; the scene stacks along +Z. */
 function toZAxis<T extends BufferGeometry>(geometry: T): T {
   geometry.applyMatrix4(Y_TO_Z);
   return geometry;
 }
 
-/** ExtrudeGeometry is non-indexed while the primitives are indexed, so level them before merging. */
+/** Levels indexing before merging, then recentres: sub-forms are placed relative to each other. */
 function merge(parts: BufferGeometry[]): BufferGeometry {
   const flat = parts.map((g) => (g.index ? g.toNonIndexed() : g));
   const merged = mergeGeometries(flat, false) ?? flat[0];
-  // Sub-forms are positioned relative to each other, not to the origin.
   merged.computeBoundingBox();
   const box = merged.boundingBox!;
   merged.translate(
@@ -66,8 +69,32 @@ function merge(parts: BufferGeometry[]): BufferGeometry {
   return merged;
 }
 
-function lathe(profile: [number, number][], segments: number): BufferGeometry {
-  return toZAxis(new LatheGeometry(profile.map(([x, y]) => new Vector2(x, y)), segments));
+/**
+ * Builds a layer from body parts and movers laid out in one design space.
+ *
+ * `merge` recentres the body on its bounding box, which a layer built upward
+ * off a base plate is never symmetric about. The movers are positioned in the
+ * same space, so they take the identical shift — otherwise they float off their
+ * mountings by however far the body moved.
+ */
+function assemble(parts: BufferGeometry[], movers: Mover[]): PartPieces {
+  const box = new Box3();
+  for (const part of parts) {
+    part.computeBoundingBox();
+    box.union(part.boundingBox!);
+  }
+  const centre = box.getCenter(new Vector3());
+  return {
+    body: merge(parts),
+    movers: movers.map((mover) => ({
+      ...mover,
+      offset: [
+        mover.offset[0] - centre.x,
+        mover.offset[1] - centre.y,
+        mover.offset[2] - centre.z,
+      ],
+    })),
+  };
 }
 
 /** Copies of `geometry` evenly spaced around the axis, each already oriented by `place`. */
@@ -93,371 +120,190 @@ export function toPieces(result: BufferGeometry | PartPieces): PartPieces {
 const between = (rand: () => number, lo: number, hi: number) => lo + rand() * (hi - lo);
 const countBetween = (rand: () => number, lo: number, hi: number) => Math.round(between(rand, lo, hi));
 
-/** Flat spur gear — the original part, kept as one of the archetypes. */
-export const spurGear: PartBuilder = (radius) => createGearGeometry(radius, teethFor(radius));
+/** A layer's base plate: square, thin, centred on the origin. */
+function plate(half: number, thickness: number): BufferGeometry {
+  return new BoxGeometry(half * 2, half * 2, thickness);
+}
 
-/** Annulus with teeth cut into its inner face. */
-export const ringGear: PartBuilder = (radius, rand) => {
-  const thickness = radius * between(rand, 0.18, 0.28);
-  const shape = new Shape();
-  shape.absarc(0, 0, radius, 0, Math.PI * 2, false);
-  shape.holes.push(new Path(gearOutline(radius * 0.72, teethFor(radius))));
-  const body = new ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false, curveSegments: 6 });
-  body.translate(0, 0, -thickness / 2);
-  return body;
-};
+/** A box placed in the layer's design space. */
+function block(w: number, h: number, d: number, x: number, y: number, z: number): BufferGeometry {
+  const geometry = new BoxGeometry(w, h, d);
+  geometry.translate(x, y, z);
+  return geometry;
+}
 
-/** Barrel with a waisted middle and knurling ridges around the rim. */
-export const knurledCollar: PartBuilder = (radius, rand) => {
-  const half = radius * between(rand, 0.18, 0.28);
-  const waist = radius * 0.9;
-  const body = lathe(
-    [
-      [0, -half],
-      [radius, -half],
-      [radius, -half * 0.55],
-      [waist, -half * 0.3],
-      [waist, half * 0.3],
-      [radius, half * 0.55],
-      [radius, half],
-      [0, half],
-    ],
-    RADIAL_SEGMENTS,
-  );
-  const ridges = countBetween(rand, 22, 34);
-  const ridge = new BoxGeometry(radius * 0.06, radius * 0.1, half * 1.1);
-  return merge([body, ...ring(ridges, ridge, (a) => atAngle(a, radius))]);
-};
-
-/** Stacked lens-barrel steps of decreasing radius. */
-export const lensBarrel: PartBuilder = (radius, rand) => {
-  // Few, decisive steps: many shallow ones revolve into something that reads as a spiral.
-  const steps = countBetween(rand, 2, 3);
-  const depth = radius * between(rand, 0.3, 0.45);
-  const profile: [number, number][] = [[0, -depth / 2]];
-  for (let i = 0; i < steps; i++) {
-    const r = radius * (1 - (i / steps) * between(rand, 0.22, 0.34));
-    const y0 = -depth / 2 + (i / steps) * depth;
-    const y1 = -depth / 2 + ((i + 1) / steps) * depth;
-    profile.push([r, y0], [r, y1]);
-  }
-  const last = profile[profile.length - 1];
-  profile.push([last[0] * 0.55, last[1]], [0, last[1]]);
-  return lathe(profile, RADIAL_SEGMENTS);
-};
-
-/** Outer race, inner race and a ring of balls between them. */
-export const bearing: PartBuilder = (radius, rand) => {
-  const half = radius * between(rand, 0.12, 0.18);
-  const race = (outer: number, inner: number) =>
-    lathe(
-      [
-        [inner, -half],
-        [outer, -half],
-        [outer, half],
-        [inner, half],
-        [inner, -half],
-      ],
-      RADIAL_SEGMENTS,
-    );
-  const balls = countBetween(rand, 8, 14);
-  const ball = new SphereGeometry(radius * 0.13, 10, 8);
+/** Four walls and a floor: a crate, open at the top. */
+function openBox(span: number, height: number, thickness: number): BufferGeometry {
+  const edge = span / 2 - thickness / 2;
   return merge([
-    race(radius, radius * 0.82),
-    race(radius * 0.52, radius * 0.34),
-    ...ring(balls, ball, (a) => atAngle(a, radius * 0.67)),
+    block(span, thickness, height, 0, edge, 0),
+    block(span, thickness, height, 0, -edge, 0),
+    block(thickness, span - thickness * 2, height, edge, 0, 0),
+    block(thickness, span - thickness * 2, height, -edge, 0, 0),
+    block(span, span, thickness, 0, 0, -(height / 2 - thickness / 2)),
   ]);
-};
+}
 
-/** Mounting plate with a central bore and a circle of bolts. */
-export const boltedFlange: PartBuilder = (radius, rand) => {
-  const half = radius * between(rand, 0.08, 0.14);
-  const plate = lathe(
-    [
-      [radius * 0.22, -half],
-      [radius, -half],
-      [radius, half],
-      [radius * 0.22, half],
-      [radius * 0.22, -half],
-    ],
-    RADIAL_SEGMENTS,
-  );
-  const bolts = countBetween(rand, 5, 9);
-  const bolt = toZAxis(new CylinderGeometry(radius * 0.09, radius * 0.09, half * 3, 8));
-  return merge([plate, ...ring(bolts, bolt, (a) => atAngle(a, radius * 0.75))]);
-};
+/**
+ * The interface: a layout wireframe. Header bar, sidebar, and a grid of content
+ * tiles, the lower two of which lift off the surface like components mounting.
+ */
+export const interfacePlate: PartBuilder = (radius, rand) => {
+  const half = radius * PLATE;
+  const base = 0.07;
+  const lift = base / 2 + 0.025;
+  const face = 0.09;
+  const inset = between(rand, 0.04, 0.08) * half;
 
-/** Hub with angled blades — the turbine end of the assembly. */
-export const turbineHub: PartBuilder = (radius, rand) => {
-  const depth = radius * between(rand, 0.24, 0.34);
-  const hub = toZAxis(new CylinderGeometry(radius * 0.34, radius * 0.4, depth, RADIAL_SEGMENTS));
-  const blades = countBetween(rand, 9, 15);
-  const blade = new BoxGeometry(radius * 0.62, radius * 0.08, depth * 0.95);
-  return merge([hub, ...ring(blades, blade, (a) => atAngle(a, radius * 0.66, Math.PI / 7))]);
-};
+  const tileW = half * 0.52 - inset;
+  const tileH = half * 0.4 - inset;
+  const columns = [-half * 0.04, half * 0.68];
 
-/** Thin spacer washer. TorusGeometry already lies in the XY plane, so no reorienting. */
-export const spacerRing: PartBuilder = (radius, rand) =>
-  new TorusGeometry(radius * 0.88, radius * between(rand, 0.06, 0.1), 10, RADIAL_SEGMENTS);
-
-
-/** Toothed rim carried on spokes, with a bossed hub. */
-export const spokedWheel: PartBuilder = (radius, rand) => {
-  const half = radius * between(rand, 0.09, 0.14);
-  const rimInner = radius * 0.76;
-  const rim = lathe(
-    [
-      [rimInner, -half],
-      [radius, -half],
-      [radius, half],
-      [rimInner, half],
-      [rimInner, -half],
-    ],
-    RADIAL_SEGMENTS,
-  );
-  const teeth = countBetween(rand, 16, 26);
-  const tooth = new BoxGeometry(radius * 0.13, radius * 0.11, half * 1.9);
-  const spokeCount = countBetween(rand, 3, 5);
-  const spoke = new BoxGeometry(rimInner * 0.9, radius * 0.09, half * 1.3);
-  const hub = toZAxis(new CylinderGeometry(radius * 0.2, radius * 0.24, half * 3, 12));
-  return merge([
-    rim,
-    hub,
-    ...ring(teeth, tooth, (a) => atAngle(a, radius * 1.02)),
-    ...ring(spokeCount, spoke, (a) => atAngle(a, rimInner * 0.5)),
-  ]);
-};
-
-/** Ring topped with square castellations, like a crown coupling. */
-export const castellatedCrown: PartBuilder = (radius, rand) => {
-  const half = radius * between(rand, 0.1, 0.16);
-  const body = lathe(
-    [
-      [radius * 0.62, -half],
-      [radius, -half],
-      [radius, half],
-      [radius * 0.62, half],
-      [radius * 0.62, -half],
-    ],
-    RADIAL_SEGMENTS,
-  );
-  const teeth = countBetween(rand, 10, 16);
-  const merlon = new BoxGeometry(radius * 0.34, radius * 0.16, half * 1.4);
+  const tiles: BufferGeometry[] = [];
   const movers: Mover[] = [];
-  for (let i = 0; i < teeth; i++) {
-    const a = (i / teeth) * Math.PI * 2;
+  columns.forEach((x, column) => {
+    tiles.push(block(tileW, tileH, face, x, half * 0.3, lift));
     movers.push({
-      geometry: merlon.clone().applyMatrix4(new Matrix4().makeRotationZ(a)),
-      offset: [Math.cos(a) * radius * 0.81, Math.sin(a) * radius * 0.81, 0],
-      // A travelling wave around the ring rather than all of them together.
-      motion: { kind: 'reciprocate', travel: half * 0.9, hz: 0.4, phase: i / teeth },
+      geometry: new BoxGeometry(tileW, tileH, face),
+      offset: [x, -half * 0.3, lift],
+      motion: { kind: 'reciprocate', travel: 0.07, hz: 0.5, phase: column * 0.5 },
     });
-  }
-  return { body, movers };
-};
+  });
 
-/** Radial engine: a case carrying pistons that reciprocate along the axis. */
-export const cylinderBank: PartBuilder = (radius, rand) => {
-  const depth = radius * between(rand, 0.34, 0.46);
-  const cases = countBetween(rand, 5, 8);
-  const boss = toZAxis(new CylinderGeometry(radius * 0.34, radius * 0.42, depth * 1.1, 18));
-  const plate = lathe(
+  return assemble(
     [
-      [0, -depth * 0.55],
-      [radius * 0.5, -depth * 0.55],
-      [radius * 0.5, -depth * 0.3],
-      [0, -depth * 0.3],
+      plate(half, base),
+      block(half * 1.76, half * 0.2, face, 0, half * 0.76, lift),
+      block(half * 0.4, half * 1.1, face, -half * 0.76, -half * 0.1, lift),
+      ...tiles,
     ],
-    RADIAL_SEGMENTS,
-  );
-  const sleeve = toZAxis(new CylinderGeometry(radius * 0.3, radius * 0.3, depth * 1.15, 14));
-  const piston = toZAxis(new CylinderGeometry(radius * 0.24, radius * 0.24, depth * 0.6, 14));
-  const crown = toZAxis(new CylinderGeometry(radius * 0.26, radius * 0.26, depth * 0.14, 14));
-  crown.translate(0, 0, depth * 0.34);
-  const slug = merge([piston, crown]);
-  const movers: Mover[] = [];
-  const sleeves: BufferGeometry[] = [];
-  for (let i = 0; i < cases; i++) {
-    const a = (i / cases) * Math.PI * 2;
-    const offset: [number, number, number] = [Math.cos(a) * radius * 0.66, Math.sin(a) * radius * 0.66, 0];
-    sleeves.push(sleeve.clone().translate(offset[0], offset[1], 0));
-    movers.push({
-      geometry: slug.clone(),
-      offset,
-      // Opposed pairs: each piston sits half a beat from the one across the case.
-      motion: { kind: 'reciprocate', travel: depth * 0.3, hz: 0.55, phase: i / cases },
-    });
-  }
-  return { body: merge([boss, plate, ...sleeves]), movers };
-};
-
-/** Hub wearing a ring of radial cooling fins. */
-export const finnedCollar: PartBuilder = (radius, rand) => {
-  const depth = radius * between(rand, 0.26, 0.38);
-  const hub = toZAxis(new CylinderGeometry(radius * 0.46, radius * 0.46, depth, RADIAL_SEGMENTS));
-  const bore = lathe(
-    [
-      [radius * 0.2, -depth / 2],
-      [radius * 0.46, -depth / 2],
-      [radius * 0.46, depth / 2],
-      [radius * 0.2, depth / 2],
-      [radius * 0.2, -depth / 2],
-    ],
-    RADIAL_SEGMENTS,
-  );
-  const fins = countBetween(rand, 12, 20);
-  const fin = new BoxGeometry(radius * 0.56, radius * 0.045, depth * 0.86);
-  return merge([hub, bore, ...ring(fins, fin, (a) => atAngle(a, radius * 0.72))]);
-};
-
-/** Hex nut on a stepped collar. */
-export const hexBoss: PartBuilder = (radius, rand) => {
-  const depth = radius * between(rand, 0.4, 0.56);
-  const hex = toZAxis(new CylinderGeometry(radius, radius, depth, 6));
-  const collar = toZAxis(new CylinderGeometry(radius * 0.72, radius * 0.72, depth * 1.5, 20));
-  const washer = lathe(
-    [
-      [radius * 0.3, depth * 0.5],
-      [radius * 0.86, depth * 0.5],
-      [radius * 0.86, depth * 0.66],
-      [radius * 0.3, depth * 0.66],
-      [radius * 0.3, depth * 0.5],
-    ],
-    RADIAL_SEGMENTS,
-  );
-  return merge([hex, collar, washer]);
-};
-
-/** Disc with a lobed outline — a cam plate. */
-export const lobedCam: PartBuilder = (radius, rand) => {
-  const lobes = countBetween(rand, 6, 10);
-  const depth = radius * between(rand, 0.1, 0.16);
-  const points: Vector2[] = [];
-  const steps = lobes * 12;
-  for (let i = 0; i < steps; i++) {
-    const a = (i / steps) * Math.PI * 2;
-    const r = radius * (0.88 + 0.12 * Math.cos(a * lobes));
-    points.push(new Vector2(Math.cos(a) * r, Math.sin(a) * r));
-  }
-  const shape = new Shape(points);
-  const bore = new Path();
-  bore.absarc(0, 0, radius * 0.24, 0, Math.PI * 2, true);
-  shape.holes.push(bore);
-  const body = new ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 8 });
-  body.translate(0, 0, -depth / 2);
-  const hub = toZAxis(new CylinderGeometry(radius * 0.36, radius * 0.36, depth * 1.8, 18));
-  return merge([body, hub]);
-};
-
-/** Plate lightened by a ring of slots. */
-export const slottedDisc: PartBuilder = (radius, rand) => {
-  const depth = radius * between(rand, 0.07, 0.12);
-  const shape = new Shape();
-  shape.absarc(0, 0, radius, 0, Math.PI * 2, false);
-  const slots = countBetween(rand, 5, 8);
-  for (let i = 0; i < slots; i++) {
-    const a = (i / slots) * Math.PI * 2;
-    const slot = new Path();
-    slot.absarc(Math.cos(a) * radius * 0.6, Math.sin(a) * radius * 0.6, radius * 0.19, 0, Math.PI * 2, true);
-    shape.holes.push(slot);
-  }
-  const bore = new Path();
-  bore.absarc(0, 0, radius * 0.22, 0, Math.PI * 2, true);
-  shape.holes.push(bore);
-  const body = new ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 10 });
-  body.translate(0, 0, -depth / 2);
-  const hub = toZAxis(new CylinderGeometry(radius * 0.32, radius * 0.32, depth * 2.6, 18));
-  return merge([body, hub]);
-};
-
-/** Thin flat annulus that closes a stack. */
-export const retainingRing: PartBuilder = (radius, rand) => {
-  const half = radius * between(rand, 0.035, 0.06);
-  return lathe(
-    [
-      [radius * 0.78, -half],
-      [radius, -half],
-      [radius, half],
-      [radius * 0.78, half],
-      [radius * 0.78, -half],
-    ],
-    RADIAL_SEGMENTS,
+    movers,
   );
 };
 
-/** Knurled barrel holding a domed element behind a retaining lip. */
-export const lensGroup: PartBuilder = (radius, rand) => {
-  const half = radius * between(rand, 0.22, 0.32);
-  const barrel = lathe(
-    [
-      [radius * 0.5, -half],
-      [radius, -half],
-      [radius, half],
-      [radius * 0.86, half],
-      [radius * 0.86, half * 0.55],
-      [radius * 0.5, half * 0.55],
-      [radius * 0.5, -half],
-    ],
-    RADIAL_SEGMENTS,
+/**
+ * The services: a board of discrete blocks joined by routed channels, with work
+ * rising off the rails between them on staggered beats.
+ */
+export const serviceBoard: PartBuilder = (radius, rand) => {
+  const half = radius * PLATE;
+  const base = 0.07;
+  const lift = base / 2;
+  const rail = half * 0.07;
+  const tall = between(rand, 0.16, 0.24);
+
+  const seats: [number, number][] = [
+    [-half * 0.5, half * 0.5],
+    [half * 0.52, half * 0.46],
+    [-half * 0.46, -half * 0.52],
+    [half * 0.5, -half * 0.5],
+  ];
+  const blocks = seats.map(([x, y]) =>
+    block(half * between(rand, 0.44, 0.6), half * between(rand, 0.38, 0.54), tall, x, y, lift + tall / 2),
   );
-  const grips = countBetween(rand, 30, 44);
-  const grip = new BoxGeometry(radius * 0.05, radius * 0.08, half * 1.7);
-  const dome = new SphereGeometry(radius * 0.62, 24, 12, 0, Math.PI * 2, 0, Math.PI / 3);
-  toZAxis(dome);
-  dome.translate(0, 0, -half * 0.5);
-  return merge([barrel, dome, ...ring(grips, grip, (a) => atAngle(a, radius))]);
+
+  const cube = half * 0.17;
+  const stops: [number, number][] = [
+    [-half * 0.56, 0],
+    [half * 0.56, 0],
+    [0, -half * 0.56],
+  ];
+  const movers: Mover[] = stops.map(([x, y], i) => ({
+    geometry: new BoxGeometry(cube, cube, cube),
+    offset: [x, y, lift + 0.04 + cube / 2],
+    motion: { kind: 'reciprocate', travel: 0.1, hz: 0.45, phase: i / stops.length },
+  }));
+
+  return assemble(
+    [
+      plate(half, base),
+      block(half * 1.84, rail, 0.04, 0, 0, lift + 0.02),
+      block(rail, half * 1.84, 0.04, 0, 0, lift + 0.02),
+      ...blocks,
+    ],
+    movers,
+  );
 };
 
-/** A carrier holding several small gears that mesh side by side on one plane. */
-export const gearCluster: PartBuilder = (radius, rand) => {
-  const satellites = countBetween(rand, 4, 6);
-  const orbit = radius * 0.6;
-  // Sized so neighbouring satellites very nearly touch, as a meshing train would.
-  const satelliteRadius = Math.min(radius * 0.42, orbit * Math.sin(Math.PI / satellites) * 0.96);
-  const half = radius * 0.07;
-  const carrier = lathe(
-    [
-      [radius * 0.14, -half],
-      [radius, -half],
-      [radius, half],
-      [radius * 0.14, half],
-      [radius * 0.14, -half],
-    ],
-    RADIAL_SEGMENTS,
+/**
+ * The data: a spindle of platters. The one honestly round layer, because a
+ * stack of discs is what a database has looked like for fifty years, and the
+ * top platter turns so the roundness is doing something.
+ */
+export const dataDiscs: PartBuilder = (radius, rand) => {
+  const outer = radius * 0.86;
+  const thick = 0.05;
+  const gap = between(rand, 0.11, 0.15);
+  const disc = (r: number) => toZAxis(new CylinderGeometry(r, r, thick, RADIAL_SEGMENTS));
+
+  const lower = disc(outer);
+  lower.translate(0, 0, -gap);
+
+  return assemble(
+    [toZAxis(new CylinderGeometry(radius * 0.1, radius * 0.1, gap * 2 + thick * 3, 18)), lower, disc(outer * 0.94)],
+    [{ geometry: disc(outer * 0.88), offset: [0, 0, gap], motion: { kind: 'spin', turnsPerSecond: 0.18 } }],
   );
-  const spindle = toZAxis(new CylinderGeometry(radius * 0.2, radius * 0.2, half * 4, 14));
-  const movers: Mover[] = [];
-  for (let i = 0; i < satellites; i++) {
-    const a = (i / satellites) * Math.PI * 2;
-    movers.push({
-      geometry: createGearGeometry(satelliteRadius, teethFor(satelliteRadius), half * 2.4),
-      offset: [Math.cos(a) * orbit, Math.sin(a) * orbit, 0],
-      // Meshing neighbours must turn opposite ways.
-      motion: { kind: 'spin', turnsPerSecond: i % 2 === 0 ? 0.22 : -0.22 },
-    });
-  }
-  return { body: merge([carrier, spindle]), movers };
+};
+
+/**
+ * The models: ranks of nodes on a radial web. Each rank rises a beat after the
+ * one inside it, so a pulse travels outward through the net.
+ */
+export const modelLattice: PartBuilder = (radius, rand) => {
+  const half = radius * PLATE;
+  const base = 0.06;
+  const lift = base / 2;
+  const spokes = countBetween(rand, 6, 9);
+
+  // Thin and short: heavier spokes read as an asterisk and swamp the nodes.
+  const web = ring(spokes, block(half * 1.12, half * 0.022, 0.025, 0, 0, 0), (a) => atAngle(a, 0)).map(
+    (g) => g.translate(0, 0, lift + 0.015),
+  );
+
+  const ranks: [number, number, number][] = [
+    [0.3, 4, 0.1],
+    [0.6, 6, 0.085],
+    [0.88, 8, 0.072],
+  ];
+  const movers: Mover[] = ranks.map(([distance, count, size], i) => ({
+    geometry: merge(ring(count, new BoxGeometry(half * size, half * size, half * size), (a) => atAngle(a, half * distance))),
+    offset: [0, 0, lift + 0.09],
+    motion: { kind: 'reciprocate', travel: 0.08, hz: 0.42, phase: i / ranks.length },
+  }));
+
+  return assemble([plate(half, base), ...web], movers);
+};
+
+/**
+ * The delivery: a pallet carrying a crate, with a container lifting clear of it
+ * — a build leaving for deployment.
+ */
+export const deliveryCrates: PartBuilder = (radius, rand) => {
+  const half = radius * PLATE;
+  const wall = half * 0.07;
+  const height = between(rand, 0.3, 0.4);
+
+  return assemble(
+    [
+      block(half * 1.96, half * 1.96, 0.05, 0, 0, -height / 2 - 0.025),
+      openBox(half * 1.9, height, wall),
+    ],
+    [
+      {
+        geometry: openBox(half * 0.92, height * 0.72, wall * 0.85),
+        offset: [0, 0, 0],
+        motion: { kind: 'reciprocate', travel: 0.16, hz: 0.3, phase: 0 },
+      },
+    ],
+  );
 };
 
 export const BUILDERS = {
-  spurGear,
-  ringGear,
-  knurledCollar,
-  lensBarrel,
-  bearing,
-  boltedFlange,
-  turbineHub,
-  spacerRing,
-  spokedWheel,
-  castellatedCrown,
-  cylinderBank,
-  finnedCollar,
-  hexBoss,
-  lobedCam,
-  slottedDisc,
-  retainingRing,
-  lensGroup,
-  gearCluster,
+  interfacePlate,
+  serviceBoard,
+  dataDiscs,
+  modelLattice,
+  deliveryCrates,
 } as const;
 
 export type PartName = keyof typeof BUILDERS;
