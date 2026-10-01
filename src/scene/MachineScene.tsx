@@ -1,4 +1,3 @@
-import { Line } from '@react-three/drei';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useMediaQuery } from '../lib/hooks';
@@ -10,9 +9,8 @@ import { Quaternion, type Group } from 'three';
 import { CAMERA_PATH, cameraAt, posePosition } from './cameraPath';
 import { machineQuaternion } from './orientation';
 import { actProgress, stage, useScrollStage } from './timeline';
-import { layerById } from './assembly';
-import { assembledLength, machineDiameter, machineLength, motionById, placements } from './machine';
-import { BACKGROUND, INK_DIM } from './theme';
+import { brainDiameter, explodedDiameter, motionById, placements } from './machine';
+import { BACKGROUND } from './theme';
 
 /** Room left around the machine once it is fitted to the frame. */
 const MARGIN = 1.14;
@@ -37,24 +35,6 @@ function MachineRoot({ children }: { children: ReactNode }) {
   return <group ref={root}>{children}</group>;
 }
 
-/** Centre line the parts are threaded onto, extending a little past the end parts. */
-function Spindle() {
-  const half = machineLength / 2 + 0.8;
-  return (
-    <Line
-      points={[
-        [0, -half, 0],
-        [0, half, 0],
-      ]}
-      color={INK_DIM}
-      lineWidth={1}
-      transparent
-      opacity={0.6}
-      toneMapped={false}
-    />
-  );
-}
-
 export function Machine() {
   const [frameloop, setFrameloop] = useState<'always' | 'never'>('always');
   const small = useMediaQuery('(max-width: 600px)');
@@ -71,7 +51,7 @@ export function Machine() {
 
   // A narrow viewport has less room around the subject, so leave a little more.
   const margin = small ? MARGIN * 1.25 : MARGIN;
-  const cameraPosition = posePosition(cameraAt(CAMERA_PATH, 0), assembledLength * 1.9);
+  const cameraPosition = posePosition(cameraAt(CAMERA_PATH, 0), brainDiameter * 1.9);
 
   return (
     <Canvas
@@ -83,16 +63,16 @@ export function Machine() {
     >
       <color attach="background" args={[BACKGROUND]} />
       <MachineRoot>
-        <Spindle />
         {placements.map((p) => (
-          <Gear key={p.id} placement={p} layer={layerById[p.id]} motion={motionById[p.id]} />
+          <Gear key={p.id} placement={p} motion={motionById[p.id]} />
         ))}
         <SkillCallouts />
       </MachineRoot>
       <ScrollCamera
-        assembledLength={assembledLength}
-        explodedLength={machineLength}
-        diameter={machineDiameter}
+        assembledLength={0}
+        explodedLength={0}
+        diameter={brainDiameter}
+        explodedDiameter={explodedDiameter}
         fov={FOV}
         margin={margin}
       />

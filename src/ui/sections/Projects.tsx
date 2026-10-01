@@ -1,9 +1,6 @@
 import { projects } from '../../lib/data';
-import { reposForLayer } from '../../lib/layerRepos';
 import { languageColor, languageLabel } from '../../lib/palette';
 import { projectHref } from '../../lib/router';
-import { useStore } from '../../lib/store';
-import { layerById } from '../../scene/assembly';
 import { Sheet } from '../Sheet';
 
 function updated(iso: string): string {
@@ -12,28 +9,10 @@ function updated(iso: string): string {
 
 /** Act 4: the stack clears and the work itself takes over, one card per repo. */
 export function Projects() {
-  const selected = useStore((s) => s.selected);
-  const setSelected = useStore((s) => s.setSelected);
-  // Selecting a layer of the stack is the filter: these are the repos that layer
-  // is built from, matched on each repo's own languages and readme.
-  const layer = selected ? layerById[selected] : undefined;
-  const shown = layer ? reposForLayer(layer.tech, projects) : projects;
-
   return (
     <Sheet id="projects" title="Projects" number={2}>
-      {layer && (
-        <p className="filter label">
-          <span className="filter__dot" style={{ background: layer.color }} aria-hidden="true" />
-          <span>
-            {layer.label} — {shown.length} of {projects.length}
-          </span>
-          <button type="button" className="filter__clear" onClick={() => setSelected(null)}>
-            Show all
-          </button>
-        </p>
-      )}
       <ul className="grid">
-        {shown.map((project) => (
+        {projects.map((project) => (
           <li key={project.id} className="card">
             <a className="card__link" href={projectHref(project.id)}>
               <span className="card__title">{project.title}</span>

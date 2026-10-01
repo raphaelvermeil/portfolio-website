@@ -140,8 +140,15 @@ export interface FramingOptions {
   assembledLength: number;
   /** Axial extent pulled fully apart. */
   explodedLength: number;
-  /** Widest part across the axis. */
+  /** Widest extent across, closed up. */
   diameter: number;
+  /**
+   * Widest extent across once open. Defaults to `diameter`, which is right for
+   * a subject that grows along its axis; a subject that grows radially — a dome
+   * whose regions separate outward — has to declare the larger figure or the
+   * camera frames the intact assembly and lets the open one overflow.
+   */
+  explodedDiameter?: number;
   /** Radius the labelled parts fan out to when fully scattered. */
   scatterDistance: number;
   /** Vertical field of view in degrees; must match the canvas camera. */
@@ -174,13 +181,14 @@ export function cameraStateFor(
   const { assembledLength, explodedLength, diameter, scatterDistance, fov, aspect, margin } = options;
 
   const length = assembledLength + (explodedLength - assembledLength) * axialProgress;
-  const spread = scatterDistance * spreadProgress + diameter / 2;
+  const grown = diameter + ((options.explodedDiameter ?? diameter) - diameter) * axialProgress;
+  const spread = scatterDistance * spreadProgress + grown / 2;
 
-  // Framed for whichever way round the machine needs more room, rather than for
-  // the way it happens to be facing, so the twist never dollies the camera.
+  // Framed for whichever way round the subject needs more room, rather than for
+  // the way it happens to be facing, so the turn never dollies the camera.
   const distance = Math.max(
-    framingDistance(pose, FLAT_AXIS, length, diameter, fov, aspect, margin, spread),
-    framingDistance(pose, UPRIGHT_AXIS, length, diameter, fov, aspect, margin, spread),
+    framingDistance(pose, FLAT_AXIS, length, grown, fov, aspect, margin, spread),
+    framingDistance(pose, UPRIGHT_AXIS, length, grown, fov, aspect, margin, spread),
   );
 
   return { pose, distance };

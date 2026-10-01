@@ -442,35 +442,20 @@ export const gearCluster: PartBuilder = (radius, rand) => {
 /**
  * One meridian rib of the cranium, swept base → crown → base.
  *
- * Built in the XY plane so the arc stands up, which is what makes the dome read
- * as a cranium rather than a bowl. A rib is a *full* meridian — half a circle —
- * so eight ribs spaced over 180° of azimuth close the whole dome.
+ * A half torus with a four-sided tube: one continuous geometry, so the edge
+ * threshold suppresses the facets along its length and only the four
+ * longitudinal corners are drawn. Built from merged box segments instead, every
+ * seam shows — `merge` does not weld vertices, so EdgesGeometry sees each
+ * boundary as a free edge and the rib reads as a ladder.
+ *
+ * TorusGeometry already lies in the XY plane and sweeps from angle 0, which is
+ * exactly the meridian wanted, so no reorienting.
  *
  * `radius` is the dome's radius, not the rib's own thickness.
  */
 export const domeRib: PartBuilder = (radius, rand) => {
-  const thickness = radius * between(rand, 0.04, 0.055);
-  const depth = radius * 0.07;
-  const steps = 22;
-  const segments: BufferGeometry[] = [];
-  for (let i = 0; i < steps; i++) {
-    const a0 = (i / steps) * Math.PI;
-    const a1 = ((i + 1) / steps) * Math.PI;
-    const x0 = Math.cos(a0) * radius;
-    const y0 = Math.sin(a0) * radius;
-    const x1 = Math.cos(a1) * radius;
-    const y1 = Math.sin(a1) * radius;
-    // Overlap each chord slightly so the joints do not show as gaps.
-    const len = Math.hypot(x1 - x0, y1 - y0) + thickness * 0.5;
-    segments.push(
-      new BoxGeometry(len, thickness, depth).applyMatrix4(
-        new Matrix4()
-          .makeTranslation((x0 + x1) / 2, (y0 + y1) / 2, 0)
-          .multiply(new Matrix4().makeRotationZ(Math.atan2(y1 - y0, x1 - x0))),
-      ),
-    );
-  }
-  return merge(segments);
+  const tube = radius * between(rand, 0.022, 0.03);
+  return merge([new TorusGeometry(radius, tube, 4, 60, Math.PI)]);
 };
 
 /** The ring the ribs land on, carrying a circle of bolt bosses. */

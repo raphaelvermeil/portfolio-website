@@ -2,19 +2,22 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useMemo } from 'react';
 import { MathUtils, Vector3 } from 'three';
 import { cameraStateFor, posePosition } from './cameraPath';
-import { SCATTER_DISTANCE } from './skillParts';
 import { actProgress, explodeAmount, stage } from './timeline';
 
 /** How quickly the camera catches up to the scroll position. */
 const SMOOTHING = 6;
+/** How much further a region's cluster travels once labelled. */
+const SCATTER_DISTANCE = 1.6;
 
 interface Props {
   /** Axial extent closed up. */
   assembledLength: number;
   /** Axial extent pulled fully apart. */
   explodedLength: number;
-  /** Widest part, across the axis. */
+  /** Widest extent across, closed up. */
   diameter: number;
+  /** Widest extent across once open. */
+  explodedDiameter?: number;
   /** Vertical field of view, in degrees; must match the canvas camera. */
   fov: number;
   /** Extra room left around the machine. */
@@ -28,7 +31,7 @@ interface Props {
  * and tested; this only damps towards its answer so a jumpy scroll wheel still
  * reads as a smooth move.
  */
-export function ScrollCamera({ assembledLength, explodedLength, diameter, fov, margin }: Props) {
+export function ScrollCamera({ assembledLength, explodedLength, diameter, explodedDiameter, fov, margin }: Props) {
   const aspect = useThree((s) => s.size.width / s.size.height);
   const desired = useMemo(() => new Vector3(), []);
 
@@ -37,7 +40,7 @@ export function ScrollCamera({ assembledLength, explodedLength, diameter, fov, m
       stage.current,
       actProgress(stage.current, 'scatter'),
       explodeAmount(stage.current),
-      { assembledLength, explodedLength, diameter, scatterDistance: SCATTER_DISTANCE, fov, aspect, margin },
+      { assembledLength, explodedLength, diameter, explodedDiameter, scatterDistance: SCATTER_DISTANCE, fov, aspect, margin },
     );
 
     const [x, y, z] = posePosition(pose, distance);

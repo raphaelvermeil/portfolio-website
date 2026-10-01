@@ -1,4 +1,4 @@
-import { Html, useCursor } from '@react-three/drei';
+import { useCursor } from '@react-three/drei';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -7,17 +7,16 @@ import {
   EdgesGeometry,
   LineBasicMaterial,
   MeshBasicMaterial,
+  Vector3,
   type Group,
 } from 'three';
 import { useReducedMotion } from '../lib/hooks';
 import { useStore } from '../lib/store';
-import type { AssemblyLayer } from './assembly';
-import { axisOffset, type GearPlacement } from './axisLayout';
-import { SCATTER_DISTANCE, scatterById } from './skillParts';
-import { actProgress, explodeAmount, stage } from './timeline';
+import { seatPosition, type SeatPlacement } from './domeLayout';
+import { explodeAmount, stage } from './timeline';
 import { partById } from './machine';
 import { moverAngle, moverOffset, partAngle, type PartMotion } from './motion';
-import { BACKGROUND, EDGE_THRESHOLD_DEG, INK } from './theme';
+import { ACCENT, BACKGROUND, EDGE_THRESHOLD_DEG, INK } from './theme';
 
 /** Hovering runs a part's own mechanism faster rather than changing what it does. */
 const HOVER_RATE = 3;
@@ -25,15 +24,15 @@ const SELECT_RATE = 1.8;
 const REDUCED_RATE = 0.25;
 
 interface Props {
-  placement: GearPlacement;
-  layer: AssemblyLayer;
+  placement: SeatPlacement;
   motion: PartMotion;
 }
 
-export function Gear({ placement, layer, motion }: Props) {
-  const { id, radius, quaternion } = placement;
+export function Gear({ placement, motion }: Props) {
+  const { id, quaternion } = placement;
   const pieces = partById[id];
-  const escape = scatterById[id];
+
+  const seated = useMemo(() => new Vector3(), []);
 
   const bodyEdges = useMemo(() => new EdgesGeometry(pieces.body, EDGE_THRESHOLD_DEG), [pieces]);
   const moverEdges = useMemo(
@@ -66,7 +65,7 @@ export function Gear({ placement, layer, motion }: Props) {
   );
 
   const idleColor = useMemo(() => new Color(INK), []);
-  const activeColor = useMemo(() => new Color(layer.color), [layer.color]);
+  const activeColor = useMemo(() => new Color(ACCENT), []);
 
   const slider = useRef<Group>(null);
   const spinner = useRef<Group>(null);
@@ -89,13 +88,8 @@ export function Gear({ placement, layer, motion }: Props) {
     const t = clock.current;
 
     if (slider.current) {
-      // Labelled parts leave the axis; everything else stays on it.
-      const away = escape ? actProgress(stage.current, 'scatter') * SCATTER_DISTANCE : 0;
-      slider.current.position.set(
-        escape ? escape[0] * away : 0,
-        axisOffset(placement, explodeAmount(stage.current)),
-        escape ? escape[1] * away : 0,
-      );
+      seatPosition(placement, explodeAmount(stage.current), seated);
+      slider.current.position.copy(seated);
     }
     if (spinner.current) spinner.current.rotation.z = partAngle(motion, t);
 
@@ -159,19 +153,6 @@ export function Gear({ placement, layer, motion }: Props) {
         ))}
       </group>
 
-      {(hovered || selected) && (
-        <Html
-          position={[0, radius + 0.3, 0]}
-          center
-          zIndexRange={[10, 0]}
-          style={{ pointerEvents: 'none' }}
-        >
-          <div className="gear-label">
-            <span className="gear-label__name">{layer.label}</span>
-            <span className="gear-label__lang">{layer.tech.join(' · ')}</span>
-          </div>
-        </Html>
-      )}
     </group>
   );
 }

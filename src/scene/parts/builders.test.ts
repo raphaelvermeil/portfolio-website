@@ -108,9 +108,12 @@ describe('dome frame', () => {
     g.computeBoundingBox();
     const { min, max } = g.boundingBox!;
     const [x, y, z] = [max.x - min.x, max.y - min.y, max.z - min.z];
-    // Half a circle: as wide as the diameter, half as tall, and thin.
-    expect(x).toBeCloseTo(RADIUS * 2, 1);
-    expect(y).toBeCloseTo(RADIUS, 1);
+    // Half a circle: as wide as the diameter, half as tall, and thin. The tube
+    // adds its own thickness at each extreme, hence the upper bounds.
+    expect(x).toBeGreaterThanOrEqual(RADIUS * 2);
+    expect(x).toBeLessThan(RADIUS * 2.1);
+    expect(y).toBeGreaterThanOrEqual(RADIUS);
+    expect(y).toBeLessThan(RADIUS * 1.1);
     expect(y).toBeGreaterThan(z * 3);
   });
 

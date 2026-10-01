@@ -1,54 +1,89 @@
-import { ASSEMBLY } from './assembly';
+import { Quaternion, Vector3 } from 'three';
+import { FRAME_PARTS, REGIONS } from './brain';
+import { DOME_RADIUS, domeLayout, type SeatPlacement } from './domeLayout';
 import type { PartMotion } from './motion';
-import { axisLayout, type AxisItem, type GearPlacement } from './axisLayout';
 import { buildPart, type PartPieces } from './parts';
 
-/** Each layer is built once here; Gear reads its pieces back rather than rebuilding. */
+/** Each part is built once here; Gear reads its pieces back rather than rebuilding. */
 export const partById: Record<string, PartPieces> = {};
 
-/**
- * Axial extent of a layer including its movers at full travel, so the layout
- * leaves room for a tile at the top of its lift.
- */
-function axialDepth(pieces: PartPieces): number {
-  pieces.body.computeBoundingBox();
-  let min = pieces.body.boundingBox!.min.z;
-  let max = pieces.body.boundingBox!.max.z;
-  for (const mover of pieces.movers) {
-    mover.geometry.computeBoundingBox();
-    const travel = mover.motion.kind === 'reciprocate' ? mover.motion.travel : 0;
-    min = Math.min(min, mover.geometry.boundingBox!.min.z + mover.offset[2] - travel);
-    max = Math.max(max, mover.geometry.boundingBox!.max.z + mover.offset[2] + travel);
-  }
-  return max - min;
+const PART_AXIS = new Vector3(0, 0, 1);
+const UP = new Vector3(0, 1, 0);
+
+/** A frame part sits where it is put and never explodes. */
+function fixed(
+  id: string,
+  at: [number, number, number],
+  q: Quaternion,
+  radius: number,
+): SeatPlacement {
+  return {
+    id,
+    region: 'frame',
+    assembled: at,
+    exploded: at,
+    quaternion: [q.x, q.y, q.z, q.w],
+    radius,
+  };
 }
 
-const items: AxisItem[] = ASSEMBLY.map((layer) => {
-  const pieces = buildPart(layer.name, layer.radius, `${layer.name}-${layer.id}`);
-  partById[layer.id] = pieces;
-  return {
-    id: layer.id,
-    language: layer.label,
-    radius: layer.radius,
-    depth: axialDepth(pieces),
-  };
+/** Turns a part's local +Z to point along world +Y, so a disc lies flat. */
+const LIE_FLAT = new Quaternion().setFromUnitVectors(PART_AXIS, UP);
+
+/**
+ * The frame is placed by hand rather than by domeLayout: ribs are meridians
+ * standing in their own plane, not parts seated on the shell, and none of them
+ * explode — the regions separate out of a frame that stays put.
+ */
+const framePlacements: SeatPlacement[] = FRAME_PARTS.map((part) => {
+  const pieces = buildPart(part.name, part.radius, `${part.name}-${part.id}`);
+  partById[part.id] = pieces;
+
+  if (part.name === 'mountingRing') return fixed(part.id, [0, 0, 0], LIE_FLAT, part.radius);
+  if (part.name === 'crownPlate') {
+    return fixed(part.id, [0, DOME_RADIUS * 0.97, 0], LIE_FLAT, part.radius);
+  }
+
+  // A rib is built as an arc centred on its own origin, so its ends sit below
+  // the origin. Lift it by that much and they land on the base ring.
+  pieces.body.computeBoundingBox();
+  const lift = -pieces.body.boundingBox!.min.y;
+  const spin = new Quaternion().setFromAxisAngle(UP, (part.azimuth * Math.PI) / 180);
+  return fixed(part.id, [0, lift, 0], spin, part.radius);
 });
 
-const layout = axisLayout(items);
+const layout = domeLayout(
+  REGIONS.map((region) => ({
+    region: region.id,
+    azimuth: region.azimuth,
+    elevation: region.elevation,
+    parts: region.parts.map((part, i) => {
+      const id = `${region.id}-${i}`;
+      partById[id] = buildPart(part.name, part.radius, `${part.name}-${id}`);
+      return { id, radius: part.radius };
+    }),
+  })),
+);
 
-export const placements: GearPlacement[] = layout.placements;
-export const placementById: Record<string, GearPlacement> = Object.fromEntries(
+export const placements: SeatPlacement[] = [...framePlacements, ...layout.placements];
+export const placementById: Record<string, SeatPlacement> = Object.fromEntries(
   placements.map((p) => [p.id, p]),
 );
+export const regionCentroids = layout.regionCentroids;
 
-/** Axial extent closed up and pulled apart; the camera frames the larger one. */
-export const assembledLength = layout.assembledLength;
-export const machineLength = layout.explodedLength;
+/**
+ * What the camera has to frame, closed up and opened out. The dome itself sets
+ * the floor: the frame is always the widest thing until the regions clear it.
+ */
+export const brainDiameter = 2 * Math.max(DOME_RADIUS, layout.assembledReach);
+export const explodedDiameter = 2 * Math.max(DOME_RADIUS, layout.explodedReach);
 
-/** Widest layer across the axis, used to frame the camera when near end-on. */
-export const machineDiameter = 2 * Math.max(...placements.map((p) => p.radius));
-
-/** How each layer moves, taken from the assembly it was composed in. */
-export const motionById: Record<string, PartMotion> = Object.fromEntries(
-  ASSEMBLY.map((layer) => [layer.id, layer.motion] as const),
-);
+/** How each part moves. Frame parts are still. */
+export const motionById: Record<string, PartMotion> = {
+  ...Object.fromEntries(FRAME_PARTS.map((p) => [p.id, { kind: 'still' } as PartMotion])),
+  ...Object.fromEntries(
+    REGIONS.flatMap((region) =>
+      region.parts.map((part, i) => [`${region.id}-${i}`, part.motion] as const),
+    ),
+  ),
+};
