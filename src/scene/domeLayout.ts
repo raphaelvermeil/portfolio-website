@@ -18,7 +18,7 @@ const UP = new Vector3(0, 1, 0);
 const rad = (deg: number) => (deg * Math.PI) / 180;
 
 /** Radius of the cranial frame. Parts are seated inside it. */
-export const DOME_RADIUS = 3.2;
+export const DOME_RADIUS = 2.6;
 
 /**
  * Semi-axis multipliers on DOME_RADIUS, as fractions.
@@ -52,12 +52,41 @@ export function craniumRadiusAt(azimuth: number): number {
 
 /** How far a part travels outward when the assembly opens. */
 export const EXPLODE_GAP = 2.3;
-/** Seats sit at this fraction of the dome radius, so parts live under the ribs. */
-const INNER = 0.62;
-/** Radius of the ring a region's parts are arranged in, around its seat. */
-const CLUSTER = 0.62;
-/** Each part in a cluster sits slightly deeper than the last, so they read as a mechanism. */
-const STAGGER = 0.16;
+/**
+ * Seats sit at this fraction of the dome radius.
+ *
+ * Pulled well out toward the shell: seated nearer the centre the clusters bunch
+ * into the middle and leave the dome visibly empty around them. The ceiling is
+ * that a whole cluster — its ring plus the widest part on it — must still clear
+ * the ribs, so INNER·DOME_RADIUS·CRANIUM.z + CLUSTER + maxRadius has to stay
+ * under DOME_RADIUS·CRANIUM.z.
+ */
+const INNER = 0.66;
+/**
+ * Radius of the ring a region's parts are arranged in, around its seat.
+ *
+ * With n parts the adjacent centres are 2·CLUSTER·sin(π/n) apart, so at four
+ * parts no part may exceed a radius of about 0.35 without its neighbours
+ * interpenetrating.
+ *
+ * It also sets how low a region may sit. A cluster reaches CLUSTER·cos(e)
+ * below its seat, and the seat is only sin(e)·CRANIUM.y·INNER·DOME_RADIUS
+ * high, so a low region hangs out through the base ring.
+ */
+const CLUSTER = 0.5;
+
+/** Exposed so the fit can be asserted rather than eyeballed. */
+export const CLUSTER_REACH = CLUSTER;
+/**
+ * Each part in a cluster sits slightly deeper than the last, so they read as a
+ * mechanism rather than a flat rosette.
+ *
+ * Kept small on purpose. It runs along the seat normal, so on a low region most
+ * of it is downward — at 0.16 the fourth part of a cluster dropped far enough
+ * to hang through the base ring, and the depth cue is cosmetic where the fit is
+ * not.
+ */
+const STAGGER = 0.09;
 
 export interface LayoutPart {
   id: string;

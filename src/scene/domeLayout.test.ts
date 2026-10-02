@@ -4,6 +4,7 @@ import {
   CRANIUM,
   DOME_RADIUS,
   EXPLODE_GAP,
+  CLUSTER_REACH,
   craniumRadiusAt,
   domeLayout,
   seatPosition,
@@ -140,12 +141,20 @@ describe('the cranium is an ovoid, not a hemisphere', () => {
   });
 
   it('agrees with where seatOf actually puts a part', () => {
-    for (const azimuth of [0, 30, 90, 150, 240]) {
+    // Scale-free on purpose: how far in the seats sit is a private constant,
+    // but the *shape* they trace has to be the one the ribs describe.
+    const planAt = (azimuth: number) => {
       const [p] = domeLayout([
         { region: 'a', azimuth, elevation: 0, parts: [{ id: 'p', radius: 0.1 }] },
       ]).placements;
-      const plan = Math.hypot(p.assembled[0], p.assembled[2]);
-      expect(plan).toBeCloseTo(craniumRadiusAt(azimuth) * DOME_RADIUS * 0.62, 6);
+      return Math.hypot(p.assembled[0], p.assembled[2]);
+    };
+    const reference = planAt(0);
+    for (const azimuth of [30, 90, 150, 240]) {
+      expect(planAt(azimuth) / reference).toBeCloseTo(
+        craniumRadiusAt(azimuth) / craniumRadiusAt(0),
+        6,
+      );
     }
   });
 
@@ -153,5 +162,20 @@ describe('the cranium is an ovoid, not a hemisphere', () => {
     const [front] = domeLayout([{ region: 'a', azimuth: 0, elevation: 0, parts: [{ id: 'p', radius: 0.1 }] }]).placements;
     const [side] = domeLayout([{ region: 'b', azimuth: 90, elevation: 0, parts: [{ id: 'q', radius: 0.1 }] }]).placements;
     expect(Math.abs(front.assembled[2])).toBeGreaterThan(Math.abs(side.assembled[0]));
+  });
+});
+
+describe('clusters fit inside the frame', () => {
+  it('leaves every part clear of the ribs', () => {
+    // The ceiling on how far out seats may sit. Breached, clusters poke through
+    // the shell, which from overhead looks fine and from the side does not.
+    const layout = domeLayout([
+      { region: 'a', azimuth: 0, elevation: 38, parts: [{ id: 'p', radius: 0.34 }] },
+      { region: 'b', azimuth: 90, elevation: 56, parts: [{ id: 'q', radius: 0.34 }] },
+    ]);
+    for (const p of layout.placements) {
+      const reach = new Vector3(...p.assembled).length() + p.radius + CLUSTER_REACH;
+      expect(reach).toBeLessThan(DOME_RADIUS * CRANIUM.z);
+    }
   });
 });
