@@ -30,12 +30,46 @@ function polar(r: number, angle: number): Vector2 {
   return new Vector2(Math.cos(angle) * r, Math.sin(angle) * r);
 }
 
-export function createGearGeometry(radius: number, teeth: number, thickness = GEAR_THICKNESS): ExtrudeGeometry {
+/** A ring of lightening holes through the web, as a drafted plate would have. */
+export interface BoltHoles {
+  count: number;
+  /** Centre of the ring, as a fraction of the radius. */
+  circle: number;
+  /** Each hole's radius, as a fraction of the gear's radius. */
+  size: number;
+}
+
+export function createGearGeometry(
+  radius: number,
+  teeth: number,
+  thickness = GEAR_THICKNESS,
+  bolts?: BoltHoles,
+): ExtrudeGeometry {
   const shape = new Shape(gearOutline(radius, teeth));
   const bore = new Path();
   bore.absarc(0, 0, radius * BORE_RATIO, 0, Math.PI * 2, true);
   shape.holes.push(bore);
-  const geometry = new ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false, curveSegments: 4 });
+
+  // Cut as real holes rather than drawn as circles on the face: the edge pass
+  // then gives each one a wall, which is most of what makes the plate read as
+  // a solid seen slightly off axis.
+  if (bolts) {
+    for (let i = 0; i < bolts.count; i++) {
+      const a = ((i + 0.5) / bolts.count) * Math.PI * 2;
+      const hole = new Path();
+      hole.absarc(
+        Math.cos(a) * radius * bolts.circle,
+        Math.sin(a) * radius * bolts.circle,
+        radius * bolts.size,
+        0,
+        Math.PI * 2,
+        true,
+      );
+      shape.holes.push(hole);
+    }
+  }
+
+  const geometry = new ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false, curveSegments: 8 });
   geometry.translate(0, 0, -thickness / 2);
   return geometry;
 }

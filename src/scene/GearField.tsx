@@ -1,143 +1,155 @@
-import { Line } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { DoubleSide, Vector3, type Group } from 'three';
-import { BORE_RATIO, createGearGeometry, gearOutline } from './gearGeometry';
-import { BACKGROUND, INK } from './theme';
+import { DoubleSide, EdgesGeometry, type Group } from 'three';
+import { createGearGeometry } from './gearGeometry';
+import { centreDistance, meshedAngle, radiusFor } from './meshing';
+import { BACKGROUND, EDGE_THRESHOLD_DEG, INK } from './theme';
 
 /** Scroll progress of the passage the gears flank, 0 to 1. Written on scroll, read per frame. */
 const progress = { current: 0 };
 
-/** Just enough extrusion to sit the fill behind the drawing; the gears are seen face on. */
-const DEPTH = 0.04;
-/** Hairline, like a drafted plate. */
-const STROKE = 1;
+/** Plate thickness, as a share of radius. */
+const DEPTH = 0.17;
 const TAU = Math.PI * 2;
+const rad = (deg: number) => (deg * Math.PI) / 180;
 
 interface GearSpec {
-  /** -1 puts it against the left edge, 1 the right. */
-  side: -1 | 1;
-  /** How far the centre sits inside that edge, as a share of viewport height.
-   *  Small values let the edge crop the gear; negative pushes it fully out. */
-  inset: number;
-  /** Height above centre, as a share of viewport height. */
-  y: number;
-  /** Radius, as a share of viewport height. */
-  radius: number;
-  /** Tooth count. */
   teeth: number;
-  /** Spokes between hub and rim; also sets how many bolt holes are drawn. */
-  spokes: number;
-  /** Full turns across the whole passage; sign sets the direction. */
+  /** Lightening holes through the web. */
+  bolts: number;
+  /** Direction from the previous gear's centre, in degrees. Omitted on the first. */
+  alpha?: number;
+}
+
+interface ChainSpec {
+  /** -1 anchors the train against the left edge, 1 the right. */
+  side: -1 | 1;
+  /** How far the first gear's centre sits inside that edge, as a share of viewport height. */
+  inset: number;
+  /** Height of the first gear above centre, as a share of viewport height. */
+  y: number;
+  /** Turns of the *first* gear across the whole passage; the rest follow from the ratios. */
   turns: number;
-  /** Where it starts, in turns, so the teeth do not all line up. */
   phase: number;
+  gears: GearSpec[];
 }
 
 /**
- * Giant gears flanking the passage, cropped by the edges of the frame.
+ * Two gear trains, flanking the passage and cropped by the edges of the frame.
  *
- * Everything is a share of viewport height rather than a world unit, so the
- * composition holds at any window size: a gear sized in absolute units is
- * either tiny on a monitor or swallows a laptop screen.
+ * A gear is specified by its tooth count, never its radius: radius is derived
+ * from the shared module so neighbours actually mesh. Each gear after the first
+ * is placed by the direction from its driver, at the centre distance that puts
+ * their teeth into each other rather than tip to tip.
  *
- * Neighbours turn in opposite directions. They are too far apart to really
- * mesh, but same-direction neighbours read as a conveyor rather than a
- * mechanism.
+ * Sizes and positions are shares of viewport height, so the composition holds
+ * at any window size rather than being tuned to one screen.
  */
-const GEARS: GearSpec[] = [
-  { side: -1, inset: 0.16, y: 0.1, radius: 0.19, teeth: 18, spokes: 5, turns: 0.5, phase: 0 },
-  { side: -1, inset: 0.05, y: -0.23, radius: 0.145, teeth: 14, spokes: 4, turns: -0.74, phase: 0.3 },
-  { side: 1, inset: 0.24, y: 0.17, radius: 0.23, teeth: 22, spokes: 6, turns: -0.46, phase: 0.15 },
-  { side: 1, inset: -0.02, y: 0.05, radius: 0.1, teeth: 11, spokes: 3, turns: 0.9, phase: 0.6 },
-  { side: 1, inset: 0.07, y: -0.24, radius: 0.15, teeth: 15, spokes: 5, turns: 0.62, phase: 0.45 },
+const CHAINS: ChainSpec[] = [
+  {
+    side: -1,
+    inset: 0.17,
+    y: 0.12,
+    turns: 2.4,
+    phase: 0.1,
+    gears: [
+      { teeth: 18, bolts: 5 },
+      { teeth: 13, bolts: 4, alpha: 250 },
+    ],
+  },
+  {
+    side: 1,
+    inset: 0.25,
+    y: 0.18,
+    turns: -1.9,
+    phase: 0.35,
+    gears: [
+      { teeth: 22, bolts: 6 },
+      { teeth: 11, bolts: 3, alpha: -50 },
+      { teeth: 15, bolts: 5, alpha: -120 },
+    ],
+  },
 ];
 
-/** Concentric detail as fractions of the radius: rim, web, hub. */
-const RINGS = [0.68, 0.52, 0.42];
-/** Where the bolt circle sits, and how big each hole is. */
-const BOLT_CIRCLE = 0.47;
-const BOLT_HOLE = 0.045;
+function Plate({ teeth, bolts, unit }: { teeth: number; bolts: number; unit: number }) {
+  const radius = radiusFor(teeth) * unit;
 
-function OneGear({ spec, unit, halfWidth }: { spec: GearSpec; unit: number; halfWidth: number }) {
-  const group = useRef<Group>(null);
-  const radius = spec.radius * unit;
-
-  const geometry = useMemo(
-    () => createGearGeometry(radius, spec.teeth, radius * DEPTH),
-    [radius, spec.teeth],
-  );
-
-  /**
-   * The drawing, as flat loops in the gear's own plane.
-   *
-   * Seen face on there is no extrusion to show, so the depth the old machine
-   * got from its silhouette has to come from draughting instead: root circle,
-   * web, hub, bolt circle and spokes. At hairline weight a bare tooth outline
-   * is a cog symbol, not a drawing.
-   */
-  const { loops, arms } = useMemo(() => {
-    const z = (radius * DEPTH) / 2 + 0.002;
-    const circle = (r: number, segments = 72) =>
-      Array.from({ length: segments + 1 }, (_, i) => {
-        const a = (i / segments) * TAU;
-        return new Vector3(Math.cos(a) * r, Math.sin(a) * r, z);
-      });
-
-    const flat = gearOutline(radius, spec.teeth);
-    const teeth = [...flat.map((p) => new Vector3(p.x, p.y, z)), new Vector3(flat[0].x, flat[0].y, z)];
-
-    const holes = Array.from({ length: spec.spokes * 2 }, (_, i) => {
-      const a = ((i + 0.5) / (spec.spokes * 2)) * TAU;
-      const cx = Math.cos(a) * radius * BOLT_CIRCLE;
-      const cy = Math.sin(a) * radius * BOLT_CIRCLE;
-      return circle(radius * BOLT_HOLE, 20).map((p) => new Vector3(p.x + cx, p.y + cy, z));
+  const { solid, edges } = useMemo(() => {
+    const geometry = createGearGeometry(radius, teeth, radius * DEPTH, {
+      count: bolts,
+      circle: 0.56,
+      size: 0.1,
     });
-
-    // Paired points: drei draws these as separate segments, not one polyline.
-    const spokeEnds: Vector3[] = [];
-    for (let i = 0; i < spec.spokes; i++) {
-      const a = (i / spec.spokes) * TAU;
-      spokeEnds.push(new Vector3(Math.cos(a) * radius * RINGS[2], Math.sin(a) * radius * RINGS[2], z));
-      spokeEnds.push(new Vector3(Math.cos(a) * radius * RINGS[0], Math.sin(a) * radius * RINGS[0], z));
-    }
-
-    return {
-      // No root circle: the tooth outline already traces it between the teeth,
-      // and a second line there cuts across the tooth bases, which makes them
-      // read as loose rectangles sitting on a disc.
-      loops: [teeth, ...RINGS.map((r) => circle(radius * r)), circle(radius * BORE_RATIO), ...holes],
-      arms: spokeEnds,
-    };
-  }, [radius, spec.teeth, spec.spokes]);
-
-  useFrame(() => {
-    if (group.current) group.current.rotation.z = (spec.phase + progress.current * spec.turns) * TAU;
-  });
+    return { solid: geometry, edges: new EdgesGeometry(geometry, EDGE_THRESHOLD_DEG) };
+  }, [radius, teeth, bolts]);
 
   return (
-    <group position={[spec.side * (halfWidth - spec.inset * unit), spec.y * unit, 0]}>
-      <group ref={group}>
-        {/* Background-coloured and opaque: it adds no tone, it just hides what
-            is behind it, which is what keeps overlapping gears legible. */}
-        <mesh geometry={geometry}>
-          <meshBasicMaterial color={BACKGROUND} side={DoubleSide} polygonOffset polygonOffsetFactor={1} />
-        </mesh>
-        {loops.map((points, i) => (
-          <Line key={i} points={points} color={INK} lineWidth={STROKE} toneMapped={false} />
-        ))}
-        <Line points={arms} segments color={INK} lineWidth={STROKE} toneMapped={false} />
-      </group>
-    </group>
+    <>
+      {/* Background-coloured and opaque: it adds no tone, it only hides what is
+          behind it, which is what turns a wireframe into a drawn solid. */}
+      <mesh geometry={solid}>
+        <meshBasicMaterial color={BACKGROUND} side={DoubleSide} polygonOffset polygonOffsetFactor={1} />
+      </mesh>
+      <lineSegments geometry={edges}>
+        <lineBasicMaterial color={INK} toneMapped={false} />
+      </lineSegments>
+    </>
   );
 }
 
-function Gears() {
+function Chain({ spec, unit, halfWidth }: { spec: ChainSpec; unit: number; halfWidth: number }) {
+  const refs = useRef<(Group | null)[]>([]);
+
+  /** Centres, walked along the train: each sits radii-sum away from its driver. */
+  const placed = useMemo(() => {
+    let x = spec.side * (halfWidth - spec.inset * unit);
+    let y = spec.y * unit;
+    return spec.gears.map((gear, i) => {
+      if (i > 0) {
+        const gap = centreDistance(spec.gears[i - 1].teeth, gear.teeth) * unit;
+        x += Math.cos(rad(gear.alpha!)) * gap;
+        y += Math.sin(rad(gear.alpha!)) * gap;
+      }
+      return { gear, position: [x, y, 0] as [number, number, number] };
+    });
+  }, [spec, unit, halfWidth]);
+
+  useFrame(() => {
+    let angle = (spec.phase + progress.current * spec.turns) * TAU;
+    for (let i = 0; i < spec.gears.length; i++) {
+      if (i > 0) {
+        // Re-solved from the driver every frame rather than integrated per
+        // gear, so a long scroll cannot let the teeth drift out of step.
+        angle = meshedAngle(spec.gears[i - 1].teeth, angle, spec.gears[i].teeth, rad(spec.gears[i].alpha!));
+      }
+      const node = refs.current[i];
+      if (node) node.rotation.z = angle;
+    }
+  });
+
+  return (
+    <>
+      {placed.map(({ gear, position }, i) => (
+        <group key={i} position={position}>
+          <group
+            ref={(node) => {
+              refs.current[i] = node;
+            }}
+          >
+            <Plate teeth={gear.teeth} bolts={gear.bolts} unit={unit} />
+          </group>
+        </group>
+      ))}
+    </>
+  );
+}
+
+function Trains() {
   const { width, height } = useThree((s) => s.viewport);
   return (
     <>
-      {GEARS.map((spec, i) => (
-        <OneGear key={i} spec={spec} unit={height} halfWidth={width / 2} />
+      {CHAINS.map((spec, i) => (
+        <Chain key={i} spec={spec} unit={height} halfWidth={width / 2} />
       ))}
     </>
   );
@@ -164,13 +176,13 @@ function useSectionProgress(selector: string) {
 }
 
 /**
- * The gears beside the about passage, turning as it is read.
+ * The gear trains beside the about passage, turning as it is read.
  *
- * Orthographic and face on. The gears sit at the edges of the frame and have to
- * stay there; under perspective their apparent position would drift with the
- * window's aspect, and placing them would mean solving for the frustum instead
- * of naming a fraction of the viewport. Face on also keeps them in the plane of
- * the text, so they read as part of the page rather than a render behind it.
+ * Perspective rather than orthographic, which is what lets them read as solid.
+ * The gears stay flat in the plane of the text — none of them is tilted — but
+ * they sit near the edges of the frame, so the camera sees them off axis and
+ * their rims and hole walls come into view. Orthographic would show a face and
+ * nothing else however thick the plate was.
  */
 export function GearField({ section }: { section: string }) {
   const [running, setRunning] = useState<'always' | 'never'>('always');
@@ -185,13 +197,12 @@ export function GearField({ section }: { section: string }) {
   return (
     <div className="gearfield" aria-hidden="true">
       <Canvas
-        orthographic
         dpr={[1, 2]}
         frameloop={running}
-        camera={{ position: [0, 0, 10], zoom: 100, near: 0.1, far: 100 }}
+        camera={{ position: [0, 0, 10], fov: 50, near: 0.1, far: 100 }}
         gl={{ antialias: true, alpha: true }}
       >
-        <Gears />
+        <Trains />
       </Canvas>
     </div>
   );
