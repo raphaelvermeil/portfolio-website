@@ -2,6 +2,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DoubleSide, EdgesGeometry, MathUtils, type Group } from 'three';
 import { createGearGeometry } from './gearGeometry';
+import { MODULE } from './meshing';
 import { centreDistance, meshedAngle, radiusFor } from './meshing';
 import { BACKGROUND, EDGE_THRESHOLD_DEG, INK } from './theme';
 
@@ -87,10 +88,10 @@ function Plate({ teeth, bolts, unit }: { teeth: number; bolts: number; unit: num
   const radius = radiusFor(teeth) * unit;
 
   const { solid, edges } = useMemo(() => {
-    const geometry = createGearGeometry(radius, teeth, radius * DEPTH, {
+    const geometry = createGearGeometry(teeth, MODULE * unit, radius * DEPTH, {
       count: bolts,
-      circle: 0.56,
-      size: 0.1,
+      circle: 0.62,
+      size: 0.12,
     });
     return { solid: geometry, edges: new EdgesGeometry(geometry, EDGE_THRESHOLD_DEG) };
   }, [radius, teeth, bolts]);
