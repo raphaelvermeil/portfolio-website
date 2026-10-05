@@ -88,6 +88,7 @@ McWicsHackathon:
     bacteria for score, on hand-drawn pixel art.
 
 fakeCodePolisher:
+  hidden: true
   title: Charmify
   blurb: >-
     A VS Code extension with one command, Make Worse. It is a legacy-code generator — it takes
