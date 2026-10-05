@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { DoubleSide, EdgesGeometry, type Group } from 'three';
+import { DoubleSide, EdgesGeometry, MathUtils, type Group } from 'three';
 import { createGearGeometry } from './gearGeometry';
 import { centreDistance, meshedAngle, radiusFor } from './meshing';
 import { BACKGROUND, EDGE_THRESHOLD_DEG, INK } from './theme';
@@ -10,6 +10,17 @@ const progress = { current: 0 };
 
 /** Plate thickness, as a share of radius. */
 const DEPTH = 0.17;
+
+/**
+ * How quickly a train catches up to the scroll. Lower is heavier.
+ *
+ * Mass is read from lag as much as from speed: something weighty does not
+ * track its input instantly, it takes a moment to come up to speed and a
+ * moment to stop. Only the first gear of a train is damped — the rest are
+ * solved from it, so they inherit the lag and stay meshed. Damping each gear
+ * on its own would let the teeth drift apart whenever the scroll changed pace.
+ */
+const INERTIA = 2;
 const TAU = Math.PI * 2;
 const rad = (deg: number) => (deg * Math.PI) / 180;
 
@@ -28,7 +39,8 @@ interface ChainSpec {
   inset: number;
   /** Height of the first gear above centre, as a share of viewport height. */
   y: number;
-  /** Turns of the *first* gear across the whole passage; the rest follow from the ratios. */
+  /** Turns of the *first* gear across the whole passage; the rest follow from
+   *  the ratios. Kept low: these are meant to read as heavy plates. */
   turns: number;
   phase: number;
   gears: GearSpec[];
@@ -50,7 +62,7 @@ const CHAINS: ChainSpec[] = [
     side: -1,
     inset: 0.17,
     y: 0.12,
-    turns: 2.4,
+    turns: 1.15,
     phase: 0.1,
     gears: [
       { teeth: 18, bolts: 5 },
@@ -61,7 +73,7 @@ const CHAINS: ChainSpec[] = [
     side: 1,
     inset: 0.25,
     y: 0.18,
-    turns: -1.9,
+    turns: -0.9,
     phase: 0.35,
     gears: [
       { teeth: 22, bolts: 6 },
@@ -99,6 +111,8 @@ function Plate({ teeth, bolts, unit }: { teeth: number; bolts: number; unit: num
 
 function Chain({ spec, unit, halfWidth }: { spec: ChainSpec; unit: number; halfWidth: number }) {
   const refs = useRef<(Group | null)[]>([]);
+  /** The driver's actual angle, which trails the one the scroll is asking for. */
+  const driver = useRef<number | null>(null);
 
   /** Centres, walked along the train: each sits radii-sum away from its driver. */
   const placed = useMemo(() => {
@@ -114,8 +128,14 @@ function Chain({ spec, unit, halfWidth }: { spec: ChainSpec; unit: number; halfW
     });
   }, [spec, unit, halfWidth]);
 
-  useFrame(() => {
-    let angle = (spec.phase + progress.current * spec.turns) * TAU;
+  useFrame((_state, dt) => {
+    const target = (spec.phase + progress.current * spec.turns) * TAU;
+    // Snapped on the first frame, so the train does not wind up from zero when
+    // the reader arrives partway down the passage.
+    driver.current =
+      driver.current === null ? target : MathUtils.damp(driver.current, target, INERTIA, dt);
+
+    let angle = driver.current;
     for (let i = 0; i < spec.gears.length; i++) {
       if (i > 0) {
         // Re-solved from the driver every frame rather than integrated per
