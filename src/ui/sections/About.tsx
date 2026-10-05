@@ -1,9 +1,11 @@
 import { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import { countWords, numberWords, revealAmount, sectionProgress } from '../../lib/reveal';
 import { aboutMarkdown } from '../../lib/siteContent';
+import { GearField } from '../../scene/GearField';
 
 /**
- * The about text, inked in as the reader scrolls.
+ * The about text, inked in as the reader scrolls, with giant gears turning
+ * either side of it.
  *
  * Words are written straight to the DOM on scroll rather than through state:
  * there are a couple of hundred of them and they change on every frame of the
@@ -40,6 +42,7 @@ export function About() {
   return (
     <section className="reveal" id="about" ref={section} aria-label="About">
       <div className="reveal__frame">
+        <GearField section=".reveal" />
         <div className="reveal__text">
           {paragraphs.map((paragraph, p) => (
             <p key={p}>

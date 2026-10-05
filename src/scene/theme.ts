@@ -13,3 +13,12 @@ export const ACCENT = '#d8453a';
  * corners that define a part's silhouette.
  */
 export const EDGE_THRESHOLD_DEG = 24;
+
+/**
+ * The gears beside the about passage.
+ *
+ * Navy rather than the page's warm grey: they are scenery behind the text, and
+ * at that size the grey either competes with the words or disappears. One
+ * constant, so it is one edit to bring them back into the page's palette.
+ */
+export const GEAR_INK = '#23235a';

@@ -2,7 +2,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useRoute } from './lib/router';
 import { createScrollMemory, routeKey } from './lib/scrollMemory';
 import { Footer } from './ui/Footer';
-import { MachineSection } from './ui/MachineSection';
+import { Landing } from './ui/Landing';
 import { ProjectPage } from './ui/ProjectPage';
 import { About } from './ui/sections/About';
 import { Contact } from './ui/sections/Contact';
@@ -10,13 +10,13 @@ import { Projects } from './ui/sections/Projects';
 import { Skills } from './ui/sections/Skills';
 
 /**
- * The home page is one scroll spine: type, the machine, who made it, then the
- * work. A project route replaces it entirely with that project's article.
+ * The home page is one scroll spine: type, who made it, then the work. A
+ * project route replaces it entirely with that project's article.
  */
 function Home() {
   return (
     <main>
-      <MachineSection />
+      <Landing />
       <About />
       <Projects />
       <Skills />

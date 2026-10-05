@@ -5,7 +5,7 @@ export const TEETH_MIN = 8;
 export const TEETH_MAX = 28;
 export const GEAR_THICKNESS = 0.12;
 const ROOT_RATIO = 0.82;
-const BORE_RATIO = 0.18;
+export const BORE_RATIO = 0.3;
 
 export function teethFor(radius: number): number {
   return Math.min(TEETH_MAX, Math.max(TEETH_MIN, Math.round(radius * TEETH_PER_UNIT)));

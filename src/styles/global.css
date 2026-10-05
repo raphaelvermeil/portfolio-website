@@ -41,24 +41,12 @@ h3,
 
 /* --- Machine section ---------------------------------------------------- */
 /* Tall enough to give the explode somewhere to happen; the frame inside stays put. */
-.machine {
+.landing {
   position: relative;
-  height: 420svh;
-  width: 100%;
-  background: var(--bg);
-}
-
-.machine__frame {
-  position: sticky;
-  top: 0;
-  height: 100vh;
   height: 100svh;
   width: 100%;
+  background: var(--bg);
   overflow: hidden;
-}
-
-.machine canvas {
-  display: block;
 }
 
 .gear-label {
@@ -164,15 +152,9 @@ h3,
 }
 
 /* --- Hero overlay -------------------------------------------------------- */
-.hero {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  pointer-events: none;
-}
-
 .hero__nav {
   position: absolute;
+  z-index: 4;
   top: calc(var(--gutter) + env(safe-area-inset-top, 0px));
   right: var(--gutter);
   display: flex;
@@ -1025,7 +1007,20 @@ h3,
   padding: var(--gutter);
 }
 
+.gearfield {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.gearfield canvas {
+  display: block;
+}
+
 .reveal__text {
+  position: relative;
+  z-index: 1;
   /* Sized so the whole passage sits in one viewport: it is revealed by
      scrolling past it, not by scrolling through it. */
   max-width: 30ch;
