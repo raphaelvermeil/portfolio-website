@@ -279,6 +279,11 @@ h3,
   padding: var(--gutter);
 }
 
+/* Wide enough for three cards with thumbnails; prose sheets stay narrow. */
+.sheet--wide .sheet__frame {
+  max-width: 1280px;
+}
+
 .sheet__frame {
   position: relative;
   max-width: 960px;
@@ -394,7 +399,7 @@ h3,
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 1px;
   background: var(--line);
   border: 1px solid var(--line);
@@ -409,7 +414,7 @@ h3,
   flex-direction: column;
   gap: 10px;
   height: 100%;
-  padding: 20px;
+  padding: 14px 14px 20px;
   color: var(--ink);
   text-decoration: none;
   transition: background 0.15s ease;
@@ -419,6 +424,32 @@ h3,
 .card__link:focus-visible {
   background: rgba(30, 29, 27, 0.05);
   text-decoration: none;
+}
+
+.card__thumb {
+  display: block;
+  position: relative;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 4px;
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--ink) 3%, var(--bg));
+  overflow: hidden;
+}
+
+.card__thumb img,
+.card__plate {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.card__thumb img {
+  object-fit: cover;
+}
+
+/* currentColor is what the plate's strokes pick up. */
+.card__plate {
+  color: var(--ink);
 }
 
 .card__title {
