@@ -113,6 +113,10 @@ pandas-marketingdata-prep:
     A pandas notebook cleaning and reshaping raw marketing analytics into something that can
     actually be analysed.
 
+# This site itself: it is the thing you are looking at, not an entry in its own grid.
+portfolio-website:
+  hidden: true
+
 # Not project work: an empty repo, a practice log, and a GitHub tutorial repo.
 gearmeup-native:
   hidden: true
