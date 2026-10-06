@@ -121,10 +121,54 @@ h3,
   text-align: right;
 }
 
+/* On a phone the poster cannot be an overlay: seven nav links and a headline
+   cannot share one 390px-wide corner without colliding. So the landing stops
+   being a stack of absolutely-placed pieces and becomes an ordinary column —
+   name, headline, portrait, nav — with the two marks still pinned to the
+   bottom edge, which is the one part that does hold. */
 @media (max-width: 640px) {
+  .landing {
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: calc(var(--gutter) + env(safe-area-inset-top, 0px)) var(--gutter)
+      calc(var(--gutter) * 2 + 44px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .titlecard {
+    position: static;
+    /* will-change: transform would make this a containing block for the two
+       absolutely-placed marks, pinning them to the portrait instead of to the
+       foot of the hero. Nothing transforms it any more, so drop it here. */
+    will-change: auto;
+    display: flex;
+    flex-direction: column;
+    /* Centred in the space above the nav, rather than pinned to the top with
+       all the slack falling in one gap below the portrait. */
+    margin-block: auto;
+    gap: 18px;
+    padding: 0;
+    pointer-events: auto;
+  }
+
+  .titlecard__name {
+    position: static;
+  }
+
   .titlecard__role {
     font-size: clamp(2.6rem, 17vw, 5rem);
   }
+
+  /* Out of the headline's way, rather than sitting across it. */
+  .titlecard__portrait {
+    align-self: flex-start;
+    width: 96px;
+    margin-top: 0;
+  }
+
   .titlecard__mark--right {
     max-width: 55vw;
   }
@@ -153,6 +197,28 @@ h3,
 .hero__nav a:hover {
   text-decoration: none;
   border-bottom-color: var(--accent);
+}
+
+/* Must come after the rules above: same specificity, so source order decides. */
+@media (max-width: 640px) {
+  /* Pushed to the foot of the hero column, above the pinned marks. The nav is
+     first in the DOM so it reaches the keyboard early; order moves it visually
+     without moving it in the tab sequence. */
+  .hero__nav {
+    position: static;
+    order: 1;
+    margin-top: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 18px;
+  }
+
+  /* 44px minimum, so each link is a real touch target. */
+  .hero__nav a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 
 .hero__hint.is-hidden {
@@ -226,6 +292,9 @@ h3,
   padding: 6px 10px;
   text-align: left;
   vertical-align: top;
+  /* An email address is one unbreakable token, and on a 320px screen its
+     min-content width alone pushed the page into sideways scroll. */
+  overflow-wrap: anywhere;
 }
 
 .panel__block th {
@@ -459,7 +528,7 @@ h3,
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   gap: 1px;
   background: var(--line);
   border: 1px solid var(--line);
@@ -743,6 +812,43 @@ h3,
 
 @media (max-width: 640px) {
   .reveal__text {
-    max-width: 22ch;
+    /* Wider and larger than the desktop ratio would give: 2.3vw of a phone is
+       nothing, and the passage was being read at body size. */
+    max-width: 26ch;
+    font-size: clamp(1.25rem, 5.2vw, 1.7rem);
+  }
+
+  /* Four thumb-swipes to ink in one short passage is too long a runway. */
+  .reveal {
+    height: 190svh;
+  }
+
+  /* On a wide screen the trains run either side of the column; in a phone's
+     width they have nowhere to go but behind the words, so drop them back to
+     being a watermark. */
+  .gearfield {
+    opacity: 0.45;
+  }
+}
+
+/* --- Touch ---------------------------------------------------------------- */
+/* Hover styling sticks on a touch screen — a tapped card stays highlighted
+   until something else is tapped — so give these devices a press state instead. */
+@media (hover: none) {
+  .card__link:hover {
+    background: none;
+  }
+
+  .card__link:active {
+    background: rgba(30, 29, 27, 0.07);
+  }
+
+  .hero__nav a:hover {
+    border-bottom-color: transparent;
+  }
+
+  .hero__nav a:active,
+  .article__back:active {
+    color: var(--accent);
   }
 }

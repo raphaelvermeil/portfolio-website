@@ -167,10 +167,14 @@ function Chain({ spec, unit, halfWidth }: { spec: ChainSpec; unit: number; halfW
 
 function Trains() {
   const { width, height } = useThree((s) => s.viewport);
+  // Sizing off height alone suits a landscape window, but on a portrait phone it
+  // makes gears taller than the column is wide — they stop being the texture
+  // behind the passage and start competing with it. Cap them against width too.
+  const unit = Math.min(height, width * 1.4);
   return (
     <>
       {CHAINS.map((spec, i) => (
-        <Chain key={i} spec={spec} unit={height} halfWidth={width / 2} />
+        <Chain key={i} spec={spec} unit={unit} halfWidth={width / 2} />
       ))}
     </>
   );
