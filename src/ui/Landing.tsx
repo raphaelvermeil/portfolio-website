@@ -1,5 +1,6 @@
 import { type MouseEvent } from 'react';
 import { meta } from '../lib/data';
+import { withBase } from '../lib/paths';
 import { site } from '../lib/siteContent';
 
 /**
@@ -26,7 +27,13 @@ export function Landing() {
     <section className="landing" id="top" aria-label="Introduction">
       <nav className="hero__nav" aria-label="Sections">
         <a href="#projects" onClick={jumpTo('projects')}>
-          Work
+          Projects
+        </a>
+        <a href="#experience" onClick={jumpTo('experience')}>
+          Experience
+        </a>
+        <a href="#education" onClick={jumpTo('education')}>
+          Education
         </a>
         <a href="#about" onClick={jumpTo('about')}>
           About
@@ -47,7 +54,7 @@ export function Landing() {
         <h1 className="titlecard__role">{site.role}</h1>
         <img
           className="titlecard__portrait"
-          src={meta.avatarUrl}
+          src={withBase('/portrait.jpg')}
           alt={site.name}
           width={150}
           height={150}
