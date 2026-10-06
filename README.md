@@ -19,6 +19,8 @@ pnpm build     # runs sync first, then type-checks and builds to dist/
 | `content/site.yml` | name, tagline, GitHub user, email, optional `linkedin`, `resume` |
 | `content/about.md` | About text (Markdown) |
 | `content/skills.yml` | groups of tools |
+| `content/experience.yml` | jobs: `title`, `org`, `dates`, optional `location`, `detail` |
+| `content/education.yml` | schooling, same fields as `experience.yml` |
 | `content/projects.yml` | per-repo overrides: `title`, `blurb`, `hidden`, `featured`, `image`, `homepage` |
 
 ## Deploy

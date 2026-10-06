@@ -352,6 +352,66 @@ h3,
   color: var(--muted);
 }
 
+/* A dated list: when on the left, what on the right, a rule between entries. */
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.timeline__entry {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 24px;
+  padding: 24px 0;
+  border-top: 1px solid var(--line);
+}
+
+.timeline__entry:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.timeline__entry:last-child {
+  padding-bottom: 0;
+}
+
+.timeline__dates {
+  margin: 4px 0 0;
+}
+
+.timeline__body {
+  min-width: 0;
+}
+
+.timeline__title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.timeline__org {
+  margin: 4px 0 0;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.timeline__where {
+  color: var(--muted);
+}
+
+.timeline__detail {
+  margin: 12px 0 0;
+  max-width: 60ch;
+}
+
+@media (max-width: 640px) {
+  .timeline__entry {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
 .contact {
   margin-top: 0;
   max-width: 560px;

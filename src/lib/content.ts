@@ -52,3 +52,34 @@ export function parseSkills(yamlText: string): SkillGroup[] {
     return { group: e.group, items: e.items.map(String) };
   });
 }
+
+/**
+ * One row of a dated list — a job or a degree. Both read the same way, so they
+ * share a shape: what it was, where, when, and an optional line about it.
+ */
+export interface TimelineEntry {
+  title: string;
+  org: string;
+  dates: string;
+  location: string | null;
+  detail: string | null;
+}
+
+export function parseTimeline(yamlText: string, file: string): TimelineEntry[] {
+  const doc = loadYaml(yamlText);
+  if (doc === null || doc === undefined) return [];
+  if (!Array.isArray(doc)) throw new Error(`${file} must be a list`);
+  return doc.map((entry, i) => {
+    const e = (entry ?? {}) as Record<string, unknown>;
+    if (typeof e.title !== 'string' || typeof e.org !== 'string' || typeof e.dates !== 'string') {
+      throw new Error(`${file} entry ${i} needs "title", "org" and "dates"`);
+    }
+    return {
+      title: e.title,
+      org: e.org,
+      dates: e.dates,
+      location: optionalString(e, 'location'),
+      detail: optionalString(e, 'detail'),
+    };
+  });
+}

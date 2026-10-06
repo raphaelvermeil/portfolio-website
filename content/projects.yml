@@ -1,5 +1,6 @@
 # Per-repo overrides, keyed by repository name.
 # Fields: title, blurb, hidden, featured, image (path under public/, or a URL).
+# For a local thumbnail, drop the file in thumbnails/<repo>/ instead — see thumbnails/README.md.
 
 ECSEGAMES:
   title: ECSE Games

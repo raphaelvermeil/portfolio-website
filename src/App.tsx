@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useRoute } from './lib/router';
+import { education, experience } from './lib/siteContent';
 import { createScrollMemory, routeKey } from './lib/scrollMemory';
 import { Footer } from './ui/Footer';
 import { Landing } from './ui/Landing';
@@ -8,6 +9,7 @@ import { About } from './ui/sections/About';
 import { Contact } from './ui/sections/Contact';
 import { Projects } from './ui/sections/Projects';
 import { Skills } from './ui/sections/Skills';
+import { Timeline } from './ui/sections/Timeline';
 
 /**
  * The home page is one scroll spine: type, who made it, then the work. A
@@ -19,6 +21,8 @@ function Home() {
       <Landing />
       <About />
       <Projects />
+      <Timeline id="experience" title="Experience" number={3} entries={experience} />
+      <Timeline id="education" title="Education" number={4} entries={education} />
       <Skills />
       <Contact />
       <Footer />

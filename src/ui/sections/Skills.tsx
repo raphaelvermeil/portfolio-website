@@ -8,7 +8,7 @@ import { Sheet } from '../Sheet';
  */
 export function Skills() {
   return (
-    <Sheet id="skills" title="Skills" number={3}>
+    <Sheet id="skills" title="Skills" number={5}>
       <div className="skills">
         {skills.map((group) => (
           <div key={group.group} className="skills__group">

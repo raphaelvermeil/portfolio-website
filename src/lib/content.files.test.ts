@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { parseSite, parseSkills } from './content';
+import { parseSite, parseSkills, parseTimeline } from './content';
 import { parseOverrides } from './overrides';
 
 const read = (p: string) => readFileSync(new URL(`../../content/${p}`, import.meta.url), 'utf8');
@@ -14,6 +14,14 @@ describe('content files', () => {
 
   it('skills.yml parses into at least one group', () => {
     expect(parseSkills(read('skills.yml')).length).toBeGreaterThan(0);
+  });
+
+  it('experience.yml parses into at least one entry', () => {
+    expect(parseTimeline(read('experience.yml'), 'experience.yml').length).toBeGreaterThan(0);
+  });
+
+  it('education.yml parses into at least one entry', () => {
+    expect(parseTimeline(read('education.yml'), 'education.yml').length).toBeGreaterThan(0);
   });
 
   it('projects.yml parses', () => {
