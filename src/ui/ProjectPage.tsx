@@ -55,16 +55,8 @@ export function ProjectPage({ id }: { id: string }) {
             <td>{languageLabel(project.language)}</td>
           </tr>
           <tr>
-            <th>Stars</th>
-            <td>{project.stars}</td>
-          </tr>
-          <tr>
-            <th>Updated</th>
-            <td>{formatDate(project.pushedAt)}</td>
-          </tr>
-          <tr>
-            <th>Topics</th>
-            <td>{project.topics.length ? project.topics.join(', ') : '—'}</td>
+            <th>Created</th>
+            <td>{formatDate(project.createdAt)}</td>
           </tr>
         </tbody>
       </table>

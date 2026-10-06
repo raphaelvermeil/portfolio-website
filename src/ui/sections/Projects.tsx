@@ -4,7 +4,7 @@ import { projectHref } from '../../lib/router';
 import { Sheet } from '../Sheet';
 import { Thumbnail } from '../Thumbnail';
 
-function updated(iso: string): string {
+function created(iso: string): string {
   return new Date(iso).toLocaleDateString('en-CA', { year: 'numeric', month: 'short' });
 }
 
@@ -29,7 +29,7 @@ export function Projects() {
                   {languageLabel(project.language)}
                 </span>
                 {project.stars > 0 && <span>{project.stars} ★</span>}
-                <span>{updated(project.pushedAt)}</span>
+                <span>{created(project.createdAt)}</span>
               </span>
             </a>
           </li>

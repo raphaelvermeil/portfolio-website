@@ -14,6 +14,7 @@ function repo(name: string, extra: Record<string, unknown> = {}) {
     language: 'Java',
     stargazers_count: 0,
     size: 100,
+    created_at: '2026-01-15T00:00:00Z',
     pushed_at: '2026-09-01T00:00:00Z',
     topics: ['a'],
     fork: false,

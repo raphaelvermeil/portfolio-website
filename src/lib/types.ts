@@ -8,6 +8,9 @@ export interface Project {
   languages: Record<string, number>;
   stars: number;
   sizeKb: number;
+  /** Shown on the card and the project page. */
+  createdAt: string;
+  /** Not shown; feeds the activity score the grid is ordered by. */
   pushedAt: string;
   topics: string[];
   /** Whole README, rendered on the project's own page. */

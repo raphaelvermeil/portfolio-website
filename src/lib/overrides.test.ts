@@ -12,6 +12,7 @@ const base: Project = {
   languages: { Java: 100 },
   stars: 0,
   sizeKb: 10,
+  createdAt: '2025-03-04T00:00:00Z',
   pushedAt: '2025-11-21T00:00:00Z',
   topics: [],
   readme: null,

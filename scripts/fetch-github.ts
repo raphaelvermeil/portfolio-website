@@ -35,6 +35,7 @@ interface GitHubRepo {
   language: string | null;
   stargazers_count: number;
   size: number;
+  created_at: string;
   pushed_at: string;
   topics?: string[];
   fork: boolean;
@@ -102,6 +103,7 @@ export async function fetchAll(user: string, deps: FetchDeps) {
       languages,
       stars: r.stargazers_count,
       sizeKb: r.size,
+      createdAt: r.created_at,
       pushedAt: r.pushed_at,
       topics: r.topics ?? [],
       readme,
