@@ -1,8 +1,8 @@
 - group: Languages
-  items: [TypeScript, JavaScript, Java, Python, C]
+  items: [TypeScript, JavaScript, Java, Python, C, SQL]
 - group: Web
-  items: [React, Node.js, Express, Socket.io, Three.js]
+  items: [React, Node.js, Express, Socket.io]
 - group: Data & ML
-  items: [NumPy, pandas, PyTorch, Jupyter]
+  items: [NumPy, pandas, Jupyter]
 - group: Tools
   items: [Git, Linux, Docker, VS Code]
