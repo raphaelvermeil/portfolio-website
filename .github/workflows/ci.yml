@@ -1,0 +1,57 @@
+name: CI
+
+# The site deploys from Vercel's own GitHub integration, not from here. This
+# workflow only runs the tests, and asks Vercel for a nightly rebuild so the
+# GitHub data the site is built from does not go stale between pushes.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      # Not `pnpm build`: that would re-fetch from the GitHub API on every run
+      # for a bundle nothing here publishes. The type check is the part worth
+      # catching before Vercel builds.
+      - run: pnpm exec tsc --noEmit
+
+  # prebuild re-fetches the repo list, so a rebuild is what refreshes the site's
+  # project data. Vercel has no scheduler of its own, so the nudge comes from here.
+  refresh:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ask Vercel to rebuild
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "VERCEL_DEPLOY_HOOK is not set - skipping the nightly refresh."
+            echo "Add it under Settings > Secrets and variables > Actions."
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK" > /dev/null
+          echo "Rebuild requested."
